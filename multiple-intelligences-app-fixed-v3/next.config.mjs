@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Vercel deployment configuration
+  productionBrowserSourceMaps: false,
 }
 
 export default nextConfig
