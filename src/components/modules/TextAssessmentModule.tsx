@@ -233,12 +233,6 @@ export function TextAssessmentModule({
                     placeholder="Escribí tu respuesta..."
                 />
 
-                {exercise.scoreHint && (
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      Evaluación: {exercise.scoreHint}
-                    </p>
-                )}
-
                 <Button
                     onClick={continuePitcher}
                     disabled={!answer.trim()}

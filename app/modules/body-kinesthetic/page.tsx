@@ -362,10 +362,6 @@ export default function BodyKinestheticModule() {
                       }}
                   />
                 </button>
-
-                <p className="text-sm text-muted-foreground">
-                  Objetivo: tocar cuando el círculo móvil entre dentro del círculo marcado.
-                </p>
               </section>
           )}
 
