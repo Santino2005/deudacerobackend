@@ -13,7 +13,7 @@ import { getStoredModuleResult } from '@/src/lib/moduleAttemptStorage'
 const modules = [
   { id: 'logico-matematica', title: 'Lógico-Matemática', icon: '🔢', color: 'from-blue-500 to-blue-600', route: '/module/logico-matematica' },
   { id: 'linguistic', title: 'Lingüística', icon: '📝', color: 'from-green-500 to-green-600', route: '/modules/linguistic' },
-  { id: 'inteligencia-espacial', title: 'Espacial', icon: '🎨', color: 'from-purple-500 to-purple-600', route: '/module/inteligencia-espacial' },
+  { id: 'inteligencia-espacial', title: 'Espacial', icon: '🧩', color: 'from-purple-500 to-purple-600', route: '/module/inteligencia-espacial' },
   { id: 'musical', title: 'Musical', icon: '🎵', color: 'from-pink-500 to-pink-600', route: '/modules/musical' },
   { id: 'body-kinesthetic', title: 'Corporal-Cinestésica', icon: '🏃', color: 'from-orange-500 to-orange-600', route: '/modules/body-kinesthetic' },
   { id: 'naturalistic', title: 'Naturalista', icon: '🌿', color: 'from-emerald-500 to-emerald-600', route: '/modules/naturalistic' },
@@ -73,15 +73,6 @@ function BackgroundProgressWheel({ completedIds }: { completedIds: string[] }) {
           <div className="absolute inset-[90px] rounded-full bg-background/95" />
 
           <div className="absolute inset-0 rounded-full ring-1 ring-border/30" />
-        </div>
-
-        <div className="absolute left-[57%] top-[32%] hidden rounded-2xl border bg-card/80 px-5 py-4 shadow-sm backdrop-blur-md md:block">
-          <p className="text-sm font-semibold text-foreground">
-            Ciclo en progreso
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {completed}/{total} módulos completados
-          </p>
         </div>
       </div>
   )
