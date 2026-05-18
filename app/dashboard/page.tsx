@@ -21,6 +21,72 @@ const modules = [
   { id: 'interpersonal', title: 'Interpersonal', icon: '👥', color: 'from-cyan-500 to-cyan-600', route: '/modules/interpersonal' },
 ]
 
+function moduleColor(moduleId: string) {
+  const colors: Record<string, string> = {
+    'logico-matematica': '#3b82f6',
+    linguistic: '#22c55e',
+    'inteligencia-espacial': '#a855f7',
+    musical: '#ec4899',
+    'body-kinesthetic': '#f97316',
+    naturalistic: '#10b981',
+    intrapersonal: '#6366f1',
+    interpersonal: '#06b6d4',
+  }
+
+  return colors[moduleId] ?? '#64748b'
+}
+
+function buildProgressGradient(completedIds: string[]) {
+  const slice = 360 / modules.length
+  const gap = 3
+
+  const parts = modules.map((module, index) => {
+    const start = index * slice
+    const end = start + slice - gap
+
+    const color = completedIds.includes(module.id)
+        ? moduleColor(module.id)
+        : 'rgba(148,163,184,0.10)'
+
+    return `${color} ${start}deg ${end}deg, transparent ${end}deg ${start + slice}deg`
+  })
+
+  return `conic-gradient(${parts.join(', ')})`
+}
+
+function BackgroundProgressWheel({ completedIds }: { completedIds: string[] }) {
+  const completed = completedIds.length
+  const total = modules.length
+  const gradient = buildProgressGradient(completedIds)
+
+  return (
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute left-1/2 top-[54%] h-[1050px] w-[1050px] -translate-x-1/2 -translate-y-1/2">
+          <div
+              className="absolute inset-0 animate-spin rounded-full opacity-35"
+              style={{
+                background: gradient,
+                animationDuration: '70s',
+              }}
+          />
+
+          <div className="absolute inset-[90px] rounded-full bg-background/95" />
+
+          <div className="absolute inset-0 rounded-full ring-1 ring-border/30" />
+        </div>
+
+        <div className="absolute left-[57%] top-[32%] hidden rounded-2xl border bg-card/80 px-5 py-4 shadow-sm backdrop-blur-md md:block">
+          <p className="text-sm font-semibold text-foreground">
+            Ciclo en progreso
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {completed}/{total} módulos completados
+          </p>
+        </div>
+      </div>
+  )
+}
+
 export default function Dashboard() {
   const router = useRouter()
   const [participantId, setParticipantId] = useState<string | null>(null)
@@ -46,6 +112,16 @@ export default function Dashboard() {
         .filter(Boolean)
   }, [participantId])
 
+  const completedModuleIds = useMemo(() => {
+    if (!participantId) return []
+
+    return modules
+        .filter((module) =>
+            getStoredModuleResult(module.id, participantId)
+        )
+        .map((module) => module.id)
+  }, [participantId])
+
   function handleLogout() {
     clearStoredParticipantId()
     router.push('/')
@@ -64,45 +140,50 @@ export default function Dashboard() {
     const result = getModuleResult(moduleId)
     if (!result) return null
 
-    const scored = result.results.filter((item) => typeof item.score === 'number')
+    const shouldShowScore =
+        result.moduleId === 'logico-matematica' ||
+        result.moduleId === 'inteligencia-espacial'
+
+    if (!shouldShowScore) return null
+
+    const scored = result.results.filter(
+        (item) => typeof item.score === 'number'
+    )
+
     if (!scored.length) return null
 
-    return Math.round(
-        scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length
+    const totalScore = scored.reduce(
+        (sum, item) => sum + Number(item.score),
+        0
     )
-  }
 
-  const average =
-      completedModules.length > 0
-          ? Math.round(
-              completedModules.reduce((sum, result) => {
-                const scored = result!.results.filter((item) => typeof item.score === 'number')
-                if (!scored.length) return sum
-                const moduleAverage =
-                    scored.reduce((acc, item) => acc + Number(item.score), 0) / scored.length
-                return sum + moduleAverage
-              }, 0) / completedModules.length
-          )
-          : 0
+    return Math.round(totalScore)
+  }
 
   if (loading) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="text-center">
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
-            <p className="mt-4 text-foreground">Cargando dashboard...</p>
+            <p className="mt-4 text-foreground">
+              Cargando dashboard...
+            </p>
           </div>
         </div>
     )
   }
 
   return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-border bg-card">
+      <div className="relative min-h-screen overflow-hidden bg-background">
+        <BackgroundProgressWheel completedIds={completedModuleIds} />
+
+        <header className="relative z-10 border-b border-border bg-card/80 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <span className="font-bold text-primary-foreground">MI</span>
+              <span className="font-bold text-primary-foreground">
+                MI
+              </span>
               </div>
 
               <h1 className="text-2xl font-bold text-foreground">
@@ -110,22 +191,26 @@ export default function Dashboard() {
               </h1>
             </div>
 
-            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="gap-2"
+            >
               <LogOut className="h-4 w-4" />
               Salir
             </Button>
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-6 py-12">
+        <main className="relative z-10 mx-auto max-w-7xl px-6 py-12">
           <div className="mb-12">
             <h2 className="mb-2 text-3xl font-bold text-foreground">
               Módulos de evaluación
             </h2>
 
             <p className="text-muted-foreground">
-              Completá cada módulo. Cuando un módulo queda en revisión no se puede volver
-              a completar, pero sí revisar resultados y tiempos.
+              Completá cada módulo para cerrar el ciclo completo.
             </p>
           </div>
 
@@ -138,81 +223,63 @@ export default function Dashboard() {
               return (
                   <div
                       key={module.id}
-                      className="overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/50 hover:shadow-lg"
+                      className="overflow-hidden rounded-xl border border-border bg-card/85 backdrop-blur-md transition-all hover:border-primary/50 hover:shadow-xl"
                   >
-                    <div className={`flex h-24 items-center justify-center bg-gradient-to-br ${module.color}`}>
-                      <span className="text-5xl">{module.icon}</span>
+                    <div
+                        className={`flex h-24 items-center justify-center bg-gradient-to-br ${module.color}`}
+                    >
+                  <span className="text-5xl">
+                    {module.icon}
+                  </span>
                     </div>
 
                     <div className="p-6">
-                      <h3 className="mb-4 font-bold text-foreground">{module.title}</h3>
+                      <h3 className="mb-4 font-bold text-foreground">
+                        {module.title}
+                      </h3>
 
-                      {isCompleted ? (
-                          <>
-                            <div className="mb-4">
-                              <div className="mb-2 flex items-center justify-between">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Score
-                          </span>
-                                <span className="text-lg font-bold text-primary">
-                            {score === null ? '—' : `${score}/100`}
-                          </span>
-                              </div>
+                      {score !== null && (
+                          <div className="mb-4">
+                            <div className="mb-2 flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Score
+                        </span>
 
-                              <div className="h-2 w-full rounded-full bg-muted">
-                                <div
-                                    className="h-2 rounded-full bg-primary transition-all"
-                                    style={{ width: `${score ?? 0}%` }}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="mb-4">
-                        <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                          ✓ En revisión
+                              <span className="font-bold text-primary">
+                          {score}/100
                         </span>
                             </div>
-                          </>
-                      ) : (
-                          <div className="mb-4">
-                      <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                        Sin iniciar
-                      </span>
+
+                            <div className="h-2 rounded-full bg-muted">
+                              <div
+                                  className="h-2 rounded-full bg-primary"
+                                  style={{
+                                    width: `${score}%`,
+                                  }}
+                              />
+                            </div>
                           </div>
                       )}
 
                       <Button
-                          onClick={() => handleComenzarModule(module.route)}
+                          onClick={() =>
+                              handleComenzarModule(module.route)
+                          }
                           className="w-full"
-                          variant={isCompleted ? 'outline' : 'default'}
+                          variant={
+                            isCompleted
+                                ? 'outline'
+                                : 'default'
+                          }
                       >
-                        {isCompleted ? 'Revisar' : 'Comenzar'}
+                        {isCompleted
+                            ? 'Revisar'
+                            : 'Comenzar'}
                       </Button>
                     </div>
                   </div>
               )
             })}
-          </div>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card p-6">
-              <p className="mb-2 text-sm text-muted-foreground">Módulos completados</p>
-              <p className="text-4xl font-bold text-primary">
-                {completedModules.length}/8
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-6">
-              <p className="mb-2 text-sm text-muted-foreground">Promedio</p>
-              <p className="text-4xl font-bold text-accent">{average}</p>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-6">
-              <p className="mb-2 text-sm text-muted-foreground">Estado</p>
-              <p className="text-4xl font-bold text-secondary">
-                {completedModules.length === 8 ? 'Listo' : 'Activo'}
-              </p>
-            </div>
           </div>
         </main>
       </div>

@@ -18,6 +18,9 @@ export type PictureChoiceExercise = {
   imageUrl: string
   question: string
   optionCount: number
+  correctAnswer: string
+  options?: string[]
+  percentageValue: number
 }
 
 interface Props {
@@ -69,27 +72,47 @@ export function PictureChoiceModule({ moduleId, moduleName, exercises }: Props) 
 
   function continueExercise() {
     if (!selected) return
+
     const timeSpent = (Date.now() - startRef.current) / 1000
+    const isCorrect = selected === exercise.correctAnswer
+
     const nextResult: StoredExerciseResult = {
       id: exercise.id,
       title: exercise.title,
       answer: selected,
-      timeSpent,
-      details: { imageUrl: exercise.imageUrl },
+      score: isCorrect ? exercise.percentageValue : 0,
+      details: {
+        imageUrl: exercise.imageUrl,
+        correctAnswer: exercise.correctAnswer,
+        percentageValue: exercise.percentageValue,
+        timeSpent,
+      },
       createdAt: new Date().toISOString(),
     }
+
     const nextResults = [...results, nextResult]
 
     if (index === exercises.length - 1) {
+      const totalScore = nextResults.reduce(
+          (acc, result) => acc + (result.score ?? 0),
+          0
+      )
+      const maxScore = exercises.reduce(
+          (acc, exercise) => acc + exercise.percentageValue,
+          0
+      )
       const completed = {
         moduleId,
         moduleName,
         status: 'in_review' as const,
         startedAt,
         finishedAt: new Date().toISOString(),
+        totalScore,
+        maxScore,
         results: nextResults,
       }
-      saveStoredModuleResult(completed, userKey)
+
+      saveStoredModuleResult(completed, userKey!)
       setCompletedResult(completed)
       setResults(nextResults)
       return
@@ -127,8 +150,8 @@ export function PictureChoiceModule({ moduleId, moduleName, exercises }: Props) 
           <h2 className="text-lg font-bold">{exercise.question}</h2>
           <p className="mt-1 text-sm text-muted-foreground">Elegí una opción. No se muestra si es correcta o incorrecta.</p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {Array.from({ length: exercise.optionCount }, (_, itemIndex) => String(itemIndex + 1)).map((option) => (
-              <button
+            {(exercise.options ?? Array.from({ length: exercise.optionCount }, (_, itemIndex) => String(itemIndex + 1))).map((option) => (
+                <button
                 key={option}
                 onClick={() => setSelected(option)}
                 className={`rounded-xl border-2 p-5 text-xl font-bold transition ${selected === option ? 'border-primary bg-primary/10 shadow' : 'border-border hover:border-primary/60'}`}

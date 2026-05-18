@@ -371,11 +371,8 @@ export default function MusicalModule() {
 
                 <div className="mt-5 rounded-2xl bg-muted p-4">
                   <p className="font-semibold">Fórmula clásica</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    BPS = BPM / 60
-                  </p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {currentBpm} BPM = {currentBps.toFixed(2)} golpes por segundo.
+                    BPM = golpes en 10 segundos × 6
                   </p>
                 </div>
 

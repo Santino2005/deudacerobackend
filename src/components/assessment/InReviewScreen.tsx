@@ -25,9 +25,11 @@ export function InReviewScreen({ moduleId, moduleName, onBackToDashboard }: InRe
       <div className="max-w-md text-center space-y-8">
         <div className="space-y-4">
           <div className="text-7xl animate-pulse">📋</div>
-          <h1 className="text-4xl font-bold text-foreground">
-            Evaluación en Revisión
-          </h1>
+          <div className="mb-4">
+            <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              ✓ En revisión
+            </span>
+          </div>
         </div>
 
         <div className="bg-primary/10 border-2 border-primary/30 p-8 rounded-lg space-y-4">
