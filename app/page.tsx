@@ -56,7 +56,7 @@ export default function Home() {
         <header className="border-b border-border bg-primary backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                 <span className="font-bold text-primary">MI</span>
               </div>
               <h1 className="text-2xl font-bold text-primary-foreground">
