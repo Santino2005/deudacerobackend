@@ -149,7 +149,7 @@ export default function Dashboard() {
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground">
-                <span className="font-bold text-primary">MI</span>
+                <span className="font-bold text-primary">TPI</span>
               </div>
               <h1 className="text-2xl font-bold text-primary-foreground">
                 Timón - Perfil de Inteligencias
@@ -159,7 +159,7 @@ export default function Dashboard() {
             <Button
                 size="sm"
                 onClick={handleLogout}
-                className="gap-2 bg-background text-foreground border-2 border-primary-foreground hover:bg-primary-foreground"
+                className="gap-2 bg-background text-foreground border-2 border-primary-foreground hover:bg-primary hover:text-primary-foreground"
             >
               <LogOut className="h-4 w-4" />
               Salir

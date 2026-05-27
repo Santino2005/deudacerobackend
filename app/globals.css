@@ -12,7 +12,7 @@
 
 /* --- MARCA (Botones Principales) --- */
 --primary: oklch(0.4308 0.1292 268.09);
-  --primary-foreground: white;
+--primary-foreground: oklch(0.9713 0.0062 75.41);;
 
 /* --- ACCIONES SECUNDARIAS --- */
 --secondary: oklch(0.92 0.02 250);          /* Gris muy claro para botones cancel/secundarios */
@@ -21,7 +21,7 @@
 /* --- ESTADOS (Muted y Acentos) --- */
 --muted: oklch(0.92 0.02 250);              /* Fondos sutiles */
 --muted-foreground: oklch(0.45 0.02 250);   /* Texto de ayuda/labels secundarias */
---accent: oklch(0.7552 0.937 209.59);       /* ??? */
+--accent: oklch(0.9713 0.0062 75.41);
 --accent-foreground: oklch(0.2 0.02 180);
 
 /* --- PELIGRO / ERRORES --- */
