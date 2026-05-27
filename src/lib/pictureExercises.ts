@@ -72,7 +72,42 @@ export const iePictureExercises: PictureChoiceExercise[] =
         id: `ie-${exercise.name}`,
         title: `Ejercicio ${index + 1}`,
         imageUrl: `/IE/${exercise.name}.png`,
-        question: '¿Cuál es la figura correcta?',
+        question:
+            exercise.name === 'a'
+                ? 'Seleccioná la figura que cumple las mismas condiciones de ubicación de los puntos que la figura X.'
+                : exercise.name === 'b'
+                    ? 'Encontrá cómo aparecería el patrón cuando la hoja transparente se doble sobre la línea punteada.'
+                    : exercise.name === 'c'
+                        ? 'Elegí la figura tridimensional que puede formarse a partir de la red desplegada.'
+                        : exercise.name === 'd'
+                            ? 'Seleccioná el cubo correcto que puede formarse a partir de la figura desplegada.'
+                            : exercise.name === 'e'
+                                ? 'Indicá cuál de las figuras puede formarse con las piezas dadas en la figura X.'
+                                : exercise.name === 'f'
+                                    ? 'Encontrá cuál de las figuras puede construirse utilizando todas las piezas mostradas.'
+                                    : exercise.name === 'g'
+                                        ? 'Seleccioná las tres figuras que encajan entre sí para formar un cuadrado completo.'
+                                        : exercise.name === 'h'
+                                            ? 'Seleccioná las tres figuras que pueden combinarse para formar un triángulo equilátero.'
+                                            : exercise.name === 'j'
+                                                ? 'Elegí la figura circular que puede construirse con las piezas dadas.'
+                                                : exercise.name === 'k'
+                                                    ? 'Seleccioná la figura que puede construirse con las piezas triangulares dadas.'
+                                                    : exercise.name === 'l'
+                                                        ? 'Encontrá cuál de las figuras puede formarse con las piezas dadas.'
+                                                        : exercise.name === 'm'
+                                                            ? 'Elegí la figura circular correcta formada a partir de las piezas.'
+                                                            : exercise.name === 'n'
+                                                                ? 'Seleccioná el cubo similar al formado por la hoja desplegada.'
+                                                                : exercise.name === 'o'
+                                                                    ? 'Elegí el patrón final que puede obtenerse al plegar la pieza de cartón.'
+                                                                    : exercise.name === 'p'
+                                                                        ? 'Seleccioná las tres figuras que encajan para formar un cuadrado completo.'
+                                                                        : exercise.name === 'q'
+                                                                            ? 'Seleccioná las tres figuras que pueden combinarse para formar un cuadrado completo.'
+                                                                            : exercise.name === 'r'
+                                                                                ? 'Seleccioná las tres figuras que encajan correctamente para formar un cuadrado.'
+                                                                                : '¿Cuál es la figura correcta?',
         optionCount: exercise.optionCount ?? exercise.options!.length,
         options: exercise.options,
         correctAnswer: exercise.correctAnswer,
