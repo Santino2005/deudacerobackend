@@ -4,14 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
+  clearStoredModuleProgress,
+  getStoredModuleProgress,
   getStoredModuleResult,
+  saveStoredModuleProgress,
   saveStoredModuleResult,
   StoredExerciseResult,
   StoredModuleResult,
 } from '@/src/lib/moduleAttemptStorage'
-
 import { getStoredParticipantId } from '@/src/lib/participantStorage'
-import { ModuleReview } from '@/src/components/modules/ModuleReview'
 
 const MODULE_ID = 'musical'
 const MODULE_NAME = 'Inteligencia Musical'
@@ -163,6 +164,22 @@ export default function MusicalModule() {
   const router = useRouter()
 
   const [userKey, setUserKey] = useState<string | null>(null)
+  const [completedResult, setCompletedResult] = useState<StoredModuleResult | null>(null)
+  const [results, setResults] = useState<StoredExerciseResult[]>([])
+  const [stage, setStage] = useState<Stage>('metronome')
+
+  const [metronomeIndex, setMetronomeIndex] = useState(0)
+  const [metronomeAnswers, setMetronomeAnswers] = useState<Record<number, string>>({})
+
+  const [recognitionIndex, setRecognitionIndex] = useState(0)
+  const [recognitionAnswers, setRecognitionAnswers] = useState<Record<string, string>>({})
+
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [questionAnswers, setQuestionAnswers] = useState<Record<number, number>>({})
+
+  const startedAt = useRef(new Date().toISOString())
+  const exerciseStart = useRef(Date.now())
+  const progressLoaded = useRef(false)
 
   useEffect(() => {
     const participantId = getStoredParticipantId()
@@ -173,26 +190,101 @@ export default function MusicalModule() {
     }
 
     setUserKey(participantId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const [completedResult, setCompletedResult] = useState<StoredModuleResult | null>(null)
-  const [results, setResults] = useState<StoredExerciseResult[]>([])
-  const [stage, setStage] = useState<Stage>('metronome')
+  }, [router])
 
-  const [metronomeIndex, setMetronomeIndex] = useState(0)
-  const [metronomeAnswer, setMetronomeAnswer] = useState('')
+  const stored = useMemo(() => {
+    if (!userKey) return null
+    return getStoredModuleResult(MODULE_ID, userKey)
+  }, [userKey])
 
-  const [recognitionIndex, setRecognitionIndex] = useState(0)
-  const [recognitionAnswer, setRecognitionAnswer] = useState('')
+  useEffect(() => {
+    if (!userKey) return
+    if (progressLoaded.current) return
 
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [questionAnswers, setQuestionAnswers] = useState<number[]>([])
+    const progress = getStoredModuleProgress(MODULE_ID, userKey)
 
-  const startedAt = useRef(new Date().toISOString())
-  const exerciseStart = useRef(Date.now())
+    if (!progress) {
+      progressLoaded.current = true
+      return
+    }
 
+    if (progress.currentStage) {
+      const savedStage = progress.currentStage as Stage
+      setStage(savedStage)
 
-  const stored = useMemo(() => getStoredModuleResult(MODULE_ID, userKey), [userKey])
+      if (savedStage === 'metronome') {
+        setMetronomeIndex(progress.currentIndex ?? 0)
+      }
+
+      if (savedStage === 'recognition') {
+        setRecognitionIndex(progress.currentIndex ?? 0)
+      }
+
+      if (savedStage === 'questions') {
+        setQuestionIndex(progress.currentQuestionIndex ?? 0)
+      }
+    }
+
+    setResults(progress.results ?? [])
+
+    const saved = progress.answers as {
+      metronomeAnswers?: Record<number, string>
+      recognitionAnswers?: Record<string, string>
+      questionAnswers?: Record<number, number>
+    }
+
+    setMetronomeAnswers(saved?.metronomeAnswers ?? {})
+    setRecognitionAnswers(saved?.recognitionAnswers ?? {})
+    setQuestionAnswers(saved?.questionAnswers ?? {})
+
+    progressLoaded.current = true
+  }, [userKey])
+
+  useEffect(() => {
+    exerciseStart.current = Date.now()
+  }, [stage, metronomeIndex, recognitionIndex, questionIndex])
+
+  useEffect(() => {
+    if (!userKey) return
+    if (completedResult) return
+    if (!progressLoaded.current) return
+
+    saveStoredModuleProgress(
+        {
+          moduleId: MODULE_ID,
+          moduleName: MODULE_NAME,
+          status: 'in_progress',
+          currentStage: stage,
+          currentIndex:
+              stage === 'metronome'
+                  ? metronomeIndex
+                  : stage === 'recognition'
+                      ? recognitionIndex
+                      : undefined,
+          currentQuestionIndex: stage === 'questions' ? questionIndex : undefined,
+          answers: {
+            metronomeAnswers,
+            recognitionAnswers,
+            questionAnswers,
+          },
+          results,
+          updatedAt: new Date().toISOString(),
+        },
+        userKey
+    )
+  }, [
+    userKey,
+    completedResult,
+    stage,
+    metronomeIndex,
+    recognitionIndex,
+    questionIndex,
+    metronomeAnswers,
+    recognitionAnswers,
+    questionAnswers,
+    results,
+  ])
+
   if (!userKey) {
     return (
         <div className="flex min-h-screen items-center justify-center">
@@ -201,38 +293,74 @@ export default function MusicalModule() {
     )
   }
 
-  if (completedResult) return <ModuleReview result={completedResult} />
-  if (stored) return <ModuleReview result={stored} />
+  if (stored?.status === 'completed' && !completedResult) {
+    router.push('/dashboard')
+    return null
+  }
 
-  function pushResult(result: StoredExerciseResult) {
-    const next = [...results, result]
+  function upsertResult(result: StoredExerciseResult) {
+    const next = [
+      ...results.filter((item) => item.id !== result.id),
+      result,
+    ]
+
     setResults(next)
-    exerciseStart.current = Date.now()
     return next
   }
 
   function finish(nextResults: StoredExerciseResult[]) {
-    const completed = {
+    const completed: StoredModuleResult = {
       moduleId: MODULE_ID,
       moduleName: MODULE_NAME,
-      status: 'in_review' as const,
+      status: 'completed',
       startedAt: startedAt.current,
       finishedAt: new Date().toISOString(),
       results: nextResults,
     }
 
-    saveStoredModuleResult(completed, userKey)
+    saveStoredModuleResult(completed, userKey!)
+    clearStoredModuleProgress(MODULE_ID, userKey!)
     setCompletedResult(completed)
   }
 
+  function goBack() {
+    if (stage === 'questions') {
+      if (questionIndex > 0) {
+        setQuestionIndex((prev) => prev - 1)
+        return
+      }
+
+      setStage('recognition')
+      setRecognitionIndex(recognitionExercises.length - 1)
+      return
+    }
+
+    if (stage === 'recognition') {
+      if (recognitionIndex > 0) {
+        setRecognitionIndex((prev) => prev - 1)
+        return
+      }
+
+      setStage('metronome')
+      setMetronomeIndex(tempoExercises.length - 1)
+      return
+    }
+
+    if (stage === 'metronome' && metronomeIndex > 0) {
+      setMetronomeIndex((prev) => prev - 1)
+    }
+  }
+
   function submitMetronome() {
-    if (!metronomeAnswer.trim()) return
+    const metronomeAnswer = metronomeAnswers[metronomeIndex]
+
+    if (!metronomeAnswer) return
 
     const bpm = tempoExercises[metronomeIndex].bpm
     const selected = Number(metronomeAnswer)
     const diff = Math.abs(selected - bpm)
 
-    pushResult({
+    const nextResults = upsertResult({
       id: `musical-metronome-${bpm}`,
       title: `Metrónomo ${bpm} BPM`,
       answer: `${selected} BPM`,
@@ -247,22 +375,21 @@ export default function MusicalModule() {
       createdAt: new Date().toISOString(),
     })
 
-    setMetronomeAnswer('')
-
     if (metronomeIndex + 1 >= tempoExercises.length) {
       setStage('recognition')
       return
     }
 
-    setMetronomeIndex(metronomeIndex + 1)
+    setMetronomeIndex((prev) => prev + 1)
   }
 
   function submitRecognition() {
+    const exercise = recognitionExercises[recognitionIndex]
+    const recognitionAnswer = recognitionAnswers[exercise.id]
+
     if (!recognitionAnswer) return
 
-    const exercise = recognitionExercises[recognitionIndex]
-
-    pushResult({
+    const nextResults = upsertResult({
       id: `musical-recognition-${exercise.id}`,
       title: exercise.title,
       answer: recognitionAnswer,
@@ -275,20 +402,15 @@ export default function MusicalModule() {
       createdAt: new Date().toISOString(),
     })
 
-    setRecognitionAnswer('')
-
     if (recognitionIndex + 1 >= recognitionExercises.length) {
       setStage('questions')
       return
     }
 
-    setRecognitionIndex(recognitionIndex + 1)
+    setRecognitionIndex((prev) => prev + 1)
   }
 
   function answerQuestion(value: number) {
-    const nextAnswers = [...questionAnswers, value]
-    setQuestionAnswers(nextAnswers)
-
     const result: StoredExerciseResult = {
       id: `musical-question-${questionIndex + 1}`,
       title: `Pregunta musical ${questionIndex + 1}`,
@@ -301,15 +423,19 @@ export default function MusicalModule() {
       createdAt: new Date().toISOString(),
     }
 
-    const nextResults = [...results, result]
-    setResults(nextResults)
+    setQuestionAnswers((previous) => ({
+      ...previous,
+      [questionIndex]: value,
+    }))
+
+    const nextResults = upsertResult(result)
 
     if (questionIndex + 1 >= musicalQuestions.length) {
       finish(nextResults)
       return
     }
 
-    setQuestionIndex(questionIndex + 1)
+    setQuestionIndex((prev) => prev + 1)
   }
 
   const totalActivities =
@@ -326,6 +452,27 @@ export default function MusicalModule() {
   const currentBpm = currentTempoExercise.bpm
   const currentBps = currentBpm / 60
   const currentRecognition = recognitionExercises[recognitionIndex]
+  const metronomeAnswer = metronomeAnswers[metronomeIndex] ?? ''
+  const recognitionAnswer = recognitionAnswers[currentRecognition.id] ?? ''
+  const questionAnswer = questionAnswers[questionIndex]
+
+  if (completedResult) {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
+          <div className="max-w-xl rounded-2xl border bg-card p-8 text-center shadow-sm">
+            <h2 className="text-3xl font-bold">Módulo completado</h2>
+
+            <p className="mt-4 text-muted-foreground">
+              Tus respuestas fueron registradas correctamente.
+            </p>
+
+            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
+              Volver al dashboard
+            </Button>
+          </div>
+        </div>
+    )
+  }
 
   return (
       <div className="min-h-screen bg-background px-4 py-5 sm:px-6">
@@ -374,6 +521,9 @@ export default function MusicalModule() {
                   <p className="mt-2 text-sm text-muted-foreground">
                     BPM = golpes en 10 segundos × 6
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    BPS actual: {currentBps.toFixed(2)}
+                  </p>
                 </div>
 
                 <Button
@@ -388,7 +538,12 @@ export default function MusicalModule() {
                   {currentTempoExercise.options.map((tempo) => (
                       <button
                           key={tempo}
-                          onClick={() => setMetronomeAnswer(String(tempo))}
+                          onClick={() =>
+                              setMetronomeAnswers((previous) => ({
+                                ...previous,
+                                [metronomeIndex]: String(tempo),
+                              }))
+                          }
                           className={`rounded-xl border-2 p-4 font-bold transition ${
                               metronomeAnswer === String(tempo)
                                   ? 'border-primary bg-primary/10'
@@ -400,14 +555,25 @@ export default function MusicalModule() {
                   ))}
                 </div>
 
-                <Button
-                    disabled={!metronomeAnswer}
-                    onClick={submitMetronome}
-                    className="mt-5 w-full"
-                    size="lg"
-                >
-                  Continuar
-                </Button>
+                <div className="mt-5 space-y-3">
+                  <Button
+                      variant="outline"
+                      disabled={stage === 'metronome' && metronomeIndex === 0}
+                      onClick={goBack}
+                      className="w-full"
+                  >
+                    Anterior
+                  </Button>
+
+                  <Button
+                      disabled={!metronomeAnswer}
+                      onClick={submitMetronome}
+                      className="w-full"
+                      size="lg"
+                  >
+                    Continuar
+                  </Button>
+                </div>
               </section>
           )}
 
@@ -441,7 +607,12 @@ export default function MusicalModule() {
                         </Button>
 
                         <button
-                            onClick={() => setRecognitionAnswer(option.label)}
+                            onClick={() =>
+                                setRecognitionAnswers((previous) => ({
+                                  ...previous,
+                                  [currentRecognition.id]: option.label,
+                                }))
+                            }
                             className={`mt-3 w-full rounded-xl border-2 p-3 font-semibold transition ${
                                 recognitionAnswer === option.label
                                     ? 'border-primary bg-primary/10'
@@ -454,14 +625,20 @@ export default function MusicalModule() {
                   ))}
                 </div>
 
-                <Button
-                    disabled={!recognitionAnswer}
-                    onClick={submitRecognition}
-                    className="mt-5 w-full"
-                    size="lg"
-                >
-                  Continuar
-                </Button>
+                <div className="mt-5 space-y-3">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
+
+                  <Button
+                      disabled={!recognitionAnswer}
+                      onClick={submitRecognition}
+                      className="w-full"
+                      size="lg"
+                  >
+                    Continuar
+                  </Button>
+                </div>
               </section>
           )}
 
@@ -480,7 +657,9 @@ export default function MusicalModule() {
                       <button
                           key={value}
                           onClick={() => answerQuestion(value)}
-                          className="rounded-xl border p-4 font-bold transition hover:border-primary hover:bg-primary/10"
+                          className={`rounded-xl border p-4 font-bold transition hover:border-primary hover:bg-primary/10 ${
+                              questionAnswer === value ? 'border-primary bg-primary/10' : ''
+                          }`}
                       >
                         {value}
                       </button>
@@ -490,6 +669,12 @@ export default function MusicalModule() {
                 <div className="mt-4 flex justify-between text-xs text-muted-foreground">
                   <span>Nunca</span>
                   <span>Siempre</span>
+                </div>
+
+                <div className="mt-5">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
                 </div>
               </section>
           )}

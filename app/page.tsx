@@ -13,6 +13,8 @@ export default function Home() {
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [email, setEmail] = useState('')
+  const [age, setAge] = useState('')
 
   useEffect(() => {
     const participantId = getStoredParticipantId()
@@ -26,11 +28,23 @@ export default function Home() {
   }, [router])
 
   async function handleStart() {
-    if (!firstName.trim() || !lastName.trim()) return
+    if (
+        !firstName.trim() ||
+        !lastName.trim() ||
+        !email.trim() ||
+        !age.trim()
+    ) return
 
     try {
       setSubmitting(true)
-      await createParticipant(firstName.trim(), lastName.trim())
+
+      await createParticipant(
+          firstName.trim(),
+          lastName.trim(),
+          email.trim(),
+          Number(age)
+      )
+
       router.push('/dashboard')
     } catch (error) {
       console.error(error)
@@ -123,10 +137,36 @@ export default function Home() {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium">Mail</label>
+              <Input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Ej: usuario@email.com"
+                  className="mt-2"
+              />
+            </div>
 
+            <div>
+              <label className="text-sm font-medium">Edad</label>
+              <Input
+                  type="number"
+                  value={age}
+                  onChange={(event) => setAge(event.target.value)}
+                  placeholder="Ej: 17"
+                  className="mt-2"
+              />
+            </div>
             <Button
                 onClick={handleStart}
-                disabled={!firstName.trim() || !lastName.trim() || submitting}
+                disabled={
+                    !firstName.trim() ||
+                    !lastName.trim() ||
+                    !email.trim() ||
+                    !age.trim() ||
+                    submitting
+                }
                 className="mt-6 w-full"
                 size="lg"
             >

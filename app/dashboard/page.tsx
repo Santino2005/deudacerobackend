@@ -128,30 +128,6 @@ export default function Dashboard() {
     return getStoredModuleResult(moduleId, participantId)
   }
 
-  function getModuleAverage(moduleId: string) {
-    const result = getModuleResult(moduleId)
-    if (!result) return null
-
-    const shouldShowScore =
-        result.moduleId === 'logico-matematica' ||
-        result.moduleId === 'inteligencia-espacial'
-
-    if (!shouldShowScore) return null
-
-    const scored = result.results.filter(
-        (item) => typeof item.score === 'number'
-    )
-
-    if (!scored.length) return null
-
-    const totalScore = scored.reduce(
-        (sum, item) => sum + Number(item.score),
-        0
-    )
-
-    return Math.round(totalScore)
-  }
-
   if (loading) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
@@ -205,7 +181,6 @@ export default function Dashboard() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {modules.map((module) => {
               const result = getModuleResult(module.id)
-              const score = getModuleAverage(module.id)
               const isCompleted = Boolean(result)
 
               return (
@@ -226,42 +201,20 @@ export default function Dashboard() {
                         {module.title}
                       </h3>
 
-                      {score !== null && (
-                          <div className="mb-4">
-                            <div className="mb-2 flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Score
-                        </span>
-
-                              <span className="font-bold text-primary">
-                          {score}/100
-                        </span>
-                            </div>
-
-                            <div className="h-2 rounded-full bg-muted">
-                              <div
-                                  className="h-2 rounded-full bg-primary"
-                                  style={{
-                                    width: `${score}%`,
-                                  }}
-                              />
-                            </div>
-                          </div>
-                      )}
-
                       <Button
+                          disabled={isCompleted}
                           onClick={() =>
                               handleComenzarModule(module.route)
                           }
                           className="w-full"
                           variant={
                             isCompleted
-                                ? 'outline'
+                                ? 'secondary'
                                 : 'default'
                           }
                       >
                         {isCompleted
-                            ? 'Revisar'
+                            ? 'Módulo completado'
                             : 'Comenzar'}
                       </Button>
                     </div>

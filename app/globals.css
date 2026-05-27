@@ -12,8 +12,7 @@
 
 /* --- MARCA (Botones Principales) --- */
 --primary: oklch(0.4308 0.1292 268.09);
---primary-foreground: oklch(0.804274 0.164782 85.2377);
-
+  --primary-foreground: white;
 
 /* --- ACCIONES SECUNDARIAS --- */
 --secondary: oklch(0.92 0.02 250);          /* Gris muy claro para botones cancel/secundarios */

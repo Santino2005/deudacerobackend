@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input'
 import {
   getStoredModuleResult,
   saveStoredModuleResult,
+  getStoredModuleProgress,
+  saveStoredModuleProgress,
+  clearStoredModuleProgress,
   StoredExerciseResult,
   StoredModuleResult,
 } from '@/src/lib/moduleAttemptStorage'
-
 import { getStoredParticipantId } from '@/src/lib/participantStorage'
-import { ModuleReview } from '@/src/components/modules/ModuleReview'
 
 const MODULE_ID = 'naturalistic'
 const MODULE_NAME = 'Inteligencia Naturalista'
@@ -141,6 +142,30 @@ export default function NaturalisticModule() {
   const router = useRouter()
 
   const [userKey, setUserKey] = useState<string | null>(null)
+  const [completedResult, setCompletedResult] =
+      useState<StoredModuleResult | null>(null)
+
+  const [results, setResults] = useState<StoredExerciseResult[]>([])
+  const [stage, setStage] = useState<Stage>('rosco')
+
+  const [roscoIndex, setRoscoIndex] = useState(0)
+  const [roscoAnswer, setRoscoAnswer] = useState('')
+  const [roscoStates, setRoscoStates] =
+      useState<Record<string, 'answered' | 'passed'>>({})
+  const [roscoResponses, setRoscoResponses] =
+      useState<Record<string, string>>({})
+
+  const [trackIndex, setTrackIndex] = useState(0)
+  const [trackAnswers, setTrackAnswers] =
+      useState<Record<string, string>>({})
+
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [questionAnswers, setQuestionAnswers] =
+      useState<Record<number, number>>({})
+
+  const startedAt = useRef(new Date().toISOString())
+  const exerciseStart = useRef(Date.now())
+  const progressLoaded = useRef(false)
 
   useEffect(() => {
     const participantId = getStoredParticipantId()
@@ -151,27 +176,106 @@ export default function NaturalisticModule() {
     }
 
     setUserKey(participantId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const [completedResult, setCompletedResult] = useState<StoredModuleResult | null>(null)
-  const [results, setResults] = useState<StoredExerciseResult[]>([])
-  const [stage, setStage] = useState<Stage>('rosco')
+  }, [router])
 
-  const [roscoIndex, setRoscoIndex] = useState(0)
-  const [roscoAnswer, setRoscoAnswer] = useState('')
-  const [roscoStates, setRoscoStates] = useState<Record<string, 'answered' | 'passed'>>({})
-  const [roscoResponses, setRoscoResponses] = useState<Record<string, string>>({})
+  const stored = useMemo(() => {
+    if (!userKey) return null
+    return getStoredModuleResult(MODULE_ID, userKey)
+  }, [userKey])
 
-  const [trackIndex, setTrackIndex] = useState(0)
+  useEffect(() => {
+    if (!userKey) return
+    if (progressLoaded.current) return
 
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [questionAnswers, setQuestionAnswers] = useState<number[]>([])
+    const progress = getStoredModuleProgress(MODULE_ID, userKey)
 
-  const startedAt = useRef(new Date().toISOString())
-  const exerciseStart = useRef(Date.now())
+    if (!progress) {
+      progressLoaded.current = true
+      return
+    }
 
+    if (progress.currentStage) {
+      const savedStage = progress.currentStage as Stage
+      setStage(savedStage)
 
-  const stored = useMemo(() => getStoredModuleResult(MODULE_ID, userKey), [userKey])
+      if (savedStage === 'rosco') {
+        setRoscoIndex(progress.currentIndex ?? 0)
+      }
+
+      if (savedStage === 'tracks') {
+        setTrackIndex(progress.currentIndex ?? 0)
+      }
+
+      if (savedStage === 'questions') {
+        setQuestionIndex(progress.currentQuestionIndex ?? 0)
+      }
+    }
+
+    setResults(progress.results ?? [])
+
+    const saved = progress.answers as {
+      roscoStates?: Record<string, 'answered' | 'passed'>
+      roscoResponses?: Record<string, string>
+      trackAnswers?: Record<string, string>
+      questionAnswers?: Record<number, number>
+    }
+
+    setRoscoStates(saved?.roscoStates ?? {})
+    setRoscoResponses(saved?.roscoResponses ?? {})
+    setTrackAnswers(saved?.trackAnswers ?? {})
+    setQuestionAnswers(saved?.questionAnswers ?? {})
+
+    progressLoaded.current = true
+  }, [userKey])
+
+  useEffect(() => {
+    exerciseStart.current = Date.now()
+  }, [stage, roscoIndex, trackIndex, questionIndex])
+
+  useEffect(() => {
+    if (!userKey) return
+    if (completedResult) return
+    if (!progressLoaded.current) return
+
+    saveStoredModuleProgress(
+        {
+          moduleId: MODULE_ID,
+          moduleName: MODULE_NAME,
+          status: 'in_progress',
+          currentStage: stage,
+          currentIndex:
+              stage === 'rosco'
+                  ? roscoIndex
+                  : stage === 'tracks'
+                      ? trackIndex
+                      : undefined,
+          currentQuestionIndex:
+              stage === 'questions' ? questionIndex : undefined,
+          answers: {
+            roscoStates,
+            roscoResponses,
+            trackAnswers,
+            questionAnswers,
+          },
+          results,
+          updatedAt: new Date().toISOString(),
+        },
+        userKey
+    )
+  }, [
+    userKey,
+    completedResult,
+    stage,
+    roscoIndex,
+    trackIndex,
+    questionIndex,
+    roscoStates,
+    roscoResponses,
+    trackAnswers,
+    questionAnswers,
+    results,
+  ])
+
   if (!userKey) {
     return (
         <div className="flex min-h-screen items-center justify-center">
@@ -180,28 +284,79 @@ export default function NaturalisticModule() {
     )
   }
 
-  if (completedResult) return <ModuleReview result={completedResult} />
-  if (stored) return <ModuleReview result={stored} />
+  if (stored?.status === 'completed' && !completedResult) {
+    router.push('/dashboard')
+    return null
+  }
+
+  const currentRoscoItem = roscoItems[roscoIndex]
+  const currentTrackItem = trackItems[trackIndex]
+  const selectedTrackAnswer = trackAnswers[currentTrackItem.id] ?? ''
+  const selectedQuestionAnswer = questionAnswers[questionIndex]
+
+  const totalActivities =
+      roscoItems.length + trackItems.length + naturalistQuestions.length
+
+  const completedActivities =
+      stage === 'rosco'
+          ? roscoIndex
+          : stage === 'tracks'
+              ? roscoItems.length + trackIndex
+              : roscoItems.length + trackItems.length + questionIndex
+
+  function upsertResult(result: StoredExerciseResult) {
+    const next = [
+      ...results.filter((item) => item.id !== result.id),
+      result,
+    ]
+
+    setResults(next)
+    exerciseStart.current = Date.now()
+
+    return next
+  }
 
   function finish(nextResults: StoredExerciseResult[]) {
-    const completed = {
+    const completed: StoredModuleResult = {
       moduleId: MODULE_ID,
       moduleName: MODULE_NAME,
-      status: 'in_review' as const,
+      status: 'completed',
       startedAt: startedAt.current,
       finishedAt: new Date().toISOString(),
       results: nextResults,
     }
 
-    saveStoredModuleResult(completed, userKey)
+    saveStoredModuleResult(completed, userKey!)
+    clearStoredModuleProgress(MODULE_ID, userKey!)
     setCompletedResult(completed)
   }
 
-  function pushResult(result: StoredExerciseResult) {
-    const next = [...results, result]
-    setResults(next)
-    exerciseStart.current = Date.now()
-    return next
+  function goBack() {
+    if (stage === 'questions') {
+      if (questionIndex > 0) {
+        setQuestionIndex((current) => current - 1)
+        return
+      }
+
+      setStage('tracks')
+      setTrackIndex(trackItems.length - 1)
+      return
+    }
+
+    if (stage === 'tracks') {
+      if (trackIndex > 0) {
+        setTrackIndex((current) => current - 1)
+        return
+      }
+
+      setStage('rosco')
+      setRoscoIndex(roscoItems.length - 1)
+      return
+    }
+
+    if (stage === 'rosco' && roscoIndex > 0) {
+      setRoscoIndex((current) => current - 1)
+    }
   }
 
   function completeRoscoLetter(status: 'answered' | 'passed') {
@@ -222,31 +377,38 @@ export default function NaturalisticModule() {
     setRoscoResponses(nextResponses)
     setRoscoAnswer('')
 
-    if (roscoIndex + 1 >= roscoItems.length) {
-      pushResult({
-        id: 'naturalist-rosco',
-        title: 'Rosco naturalista A-J',
-        answer: JSON.stringify(nextResponses),
-        score: undefined,
-        timeSpent: (Date.now() - exerciseStart.current) / 1000,
-        details: {
-          states: nextStates,
-          responses: nextResponses,
-        },
-        createdAt: new Date().toISOString(),
-      })
+    upsertResult({
+      id: `naturalist-rosco-${item.letter}`,
+      title: `Rosco naturalista ${item.letter}`,
+      answer: value,
+      score: undefined,
+      timeSpent: (Date.now() - exerciseStart.current) / 1000,
+      details: {
+        letter: item.letter,
+        mode: item.mode,
+        prompt: item.prompt,
+        status,
+      },
+      createdAt: new Date().toISOString(),
+    })
 
+    if (roscoIndex + 1 >= roscoItems.length) {
       setStage('tracks')
       return
     }
 
-    setRoscoIndex(roscoIndex + 1)
+    setRoscoIndex((current) => current + 1)
   }
 
   function submitTrack(option: string) {
     const item = trackItems[trackIndex]
 
-    pushResult({
+    setTrackAnswers((previous) => ({
+      ...previous,
+      [item.id]: option,
+    }))
+
+    upsertResult({
       id: item.id,
       title: item.title,
       answer: option,
@@ -264,29 +426,54 @@ export default function NaturalisticModule() {
       return
     }
 
-    setTrackIndex(trackIndex + 1)
+    setTrackIndex((current) => current + 1)
   }
 
   function answerQuestion(value: number) {
-    const nextAnswers = [...questionAnswers, value]
-    setQuestionAnswers(nextAnswers)
+    const nextQuestionAnswers = {
+      ...questionAnswers,
+      [questionIndex]: value,
+    }
+
+    setQuestionAnswers(nextQuestionAnswers)
+
+    const orderedAnswers = naturalistQuestions.map(
+        (_, index) => nextQuestionAnswers[index]
+    )
+
+    upsertResult({
+      id: `naturalist-question-${questionIndex + 1}`,
+      title: `Pregunta naturalista ${questionIndex + 1}`,
+      answer: String(value),
+      score: Math.round((value / 5) * 100),
+      timeSpent: (Date.now() - exerciseStart.current) / 1000,
+      details: {
+        question: naturalistQuestions[questionIndex],
+      },
+      createdAt: new Date().toISOString(),
+    })
 
     if (questionIndex + 1 < naturalistQuestions.length) {
-      setQuestionIndex(questionIndex + 1)
+      setQuestionIndex((current) => current + 1)
       return
     }
 
-    const average = nextAnswers.reduce((sum, item) => sum + item, 0) / nextAnswers.length
+    const validAnswers = orderedAnswers.filter(
+        (item): item is number => typeof item === 'number'
+    )
 
-    const next = pushResult({
+    const average =
+        validAnswers.reduce((sum, item) => sum + item, 0) / validAnswers.length
+
+    const next = upsertResult({
       id: 'naturalist-self-report',
       title: 'Autopercepción naturalista',
-      answer: nextAnswers.join(', '),
+      answer: validAnswers.join(', '),
       score: Math.round((average / 5) * 100),
       timeSpent: (Date.now() - exerciseStart.current) / 1000,
       details: {
         questions: naturalistQuestions,
-        answers: nextAnswers,
+        answers: validAnswers,
       },
       createdAt: new Date().toISOString(),
     })
@@ -294,17 +481,23 @@ export default function NaturalisticModule() {
     finish(next)
   }
 
-  const totalActivities = roscoItems.length + trackItems.length + naturalistQuestions.length
+  if (completedResult) {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
+          <div className="max-w-xl rounded-2xl border bg-card p-8 text-center shadow-sm">
+            <h2 className="text-3xl font-bold">Módulo completado</h2>
 
-  const completedActivities =
-      stage === 'rosco'
-          ? roscoIndex
-          : stage === 'tracks'
-              ? roscoItems.length + trackIndex
-              : roscoItems.length + trackItems.length + questionIndex
+            <p className="mt-4 text-muted-foreground">
+              Tus respuestas fueron registradas correctamente.
+            </p>
 
-  const currentRoscoItem = roscoItems[roscoIndex]
-  const currentTrackItem = trackItems[trackIndex]
+            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
+              Volver al dashboard
+            </Button>
+          </div>
+        </div>
+    )
+  }
 
   return (
       <div className="min-h-screen bg-background px-4 py-5 sm:px-6">
@@ -337,7 +530,10 @@ export default function NaturalisticModule() {
               <div
                   className="h-2 rounded-full bg-primary transition-all"
                   style={{
-                    width: `${Math.min(100, (completedActivities / totalActivities) * 100)}%`,
+                    width: `${Math.min(
+                        100,
+                        (completedActivities / totalActivities) * 100
+                    )}%`,
                   }}
               />
             </div>
@@ -346,9 +542,9 @@ export default function NaturalisticModule() {
           {stage === 'rosco' && (
               <section className="rounded-2xl border bg-card p-5 shadow-sm">
                 <div className="mb-5 flex flex-wrap justify-center gap-2">
-                  {roscoItems.map((item, index) => {
+                  {roscoItems.map((item, itemIndex) => {
                     const state = roscoStates[item.letter]
-                    const isCurrent = index === roscoIndex
+                    const isCurrent = itemIndex === roscoIndex
 
                     return (
                         <div
@@ -392,10 +588,7 @@ export default function NaturalisticModule() {
                 />
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <Button
-                      variant="outline"
-                      onClick={() => completeRoscoLetter('passed')}
-                  >
+                  <Button variant="outline" onClick={() => completeRoscoLetter('passed')}>
                     Pasa palabra
                   </Button>
 
@@ -404,6 +597,17 @@ export default function NaturalisticModule() {
                       disabled={!roscoAnswer.trim()}
                   >
                     Completar letra
+                  </Button>
+                </div>
+
+                <div className="mt-3">
+                  <Button
+                      variant="outline"
+                      disabled={stage === 'rosco' && roscoIndex === 0}
+                      onClick={goBack}
+                      className="w-full"
+                  >
+                    Anterior
                   </Button>
                 </div>
               </section>
@@ -434,11 +638,21 @@ export default function NaturalisticModule() {
                       <button
                           key={option}
                           onClick={() => submitTrack(option)}
-                          className="rounded-xl border-2 p-4 font-semibold transition hover:border-primary/60 hover:bg-primary/5"
+                          className={`rounded-xl border-2 p-4 font-semibold transition hover:border-primary/60 hover:bg-primary/5 ${
+                              selectedTrackAnswer === option
+                                  ? 'border-primary bg-primary/10'
+                                  : ''
+                          }`}
                       >
                         {option}
                       </button>
                   ))}
+                </div>
+
+                <div className="mt-5">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
                 </div>
               </section>
           )}
@@ -458,7 +672,9 @@ export default function NaturalisticModule() {
                       <button
                           key={value}
                           onClick={() => answerQuestion(value)}
-                          className="rounded-xl border p-4 font-bold transition hover:border-primary hover:bg-primary/10"
+                          className={`rounded-xl border p-4 font-bold transition hover:border-primary hover:bg-primary/10 ${
+                              selectedQuestionAnswer === value ? 'border-primary bg-primary/10' : ''
+                          }`}
                       >
                         {value}
                       </button>
@@ -468,6 +684,12 @@ export default function NaturalisticModule() {
                 <div className="mt-4 flex justify-between text-xs text-muted-foreground">
                   <span>Nunca</span>
                   <span>Siempre</span>
+                </div>
+
+                <div className="mt-5">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
                 </div>
               </section>
           )}

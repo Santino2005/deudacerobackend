@@ -1,5 +1,7 @@
-import {ReflectiveAssessmentModule, ReflectiveExercise} from '@/components/ReflectiveAssessmentModule'
-
+import {
+  ReflectiveAssessmentModule,
+  ReflectiveExercise,
+} from '@/components/ReflectiveAssessmentModule'
 const exercises: ReflectiveExercise[] = [
   {
     id: 'intra-1',

@@ -1,17 +1,18 @@
 'use client'
 
-import {ReactNode, useEffect, useMemo, useRef, useState} from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
+  clearStoredModuleProgress,
+  getStoredModuleProgress,
   getStoredModuleResult,
+  saveStoredModuleProgress,
   saveStoredModuleResult,
   StoredExerciseResult,
   StoredModuleResult,
 } from '@/src/lib/moduleAttemptStorage'
-
 import { getStoredParticipantId } from '@/src/lib/participantStorage'
-import { ModuleReview } from '@/src/components/modules/ModuleReview'
 
 const MODULE_ID = 'body-kinesthetic'
 const MODULE_NAME = 'Inteligencia Corporal-Cinestésica'
@@ -47,7 +48,42 @@ type Stage = 'timing' | 'precision' | 'simon' | 'questions'
 
 export default function BodyKinestheticModule() {
   const router = useRouter()
+
   const [userKey, setUserKey] = useState<string | null>(null)
+  const [completedResult, setCompletedResult] =
+      useState<StoredModuleResult | null>(null)
+
+  const [results, setResults] = useState<StoredExerciseResult[]>([])
+  const [stage, setStage] = useState<Stage>('timing')
+
+  const [timingDone, setTimingDone] = useState(0)
+  const [timingCircleSize, setTimingCircleSize] = useState(190)
+  const [timingMessage, setTimingMessage] = useState(
+      'Tocá el círculo cuando quede dentro de la zona ideal.'
+  )
+
+  const [precisionDone, setPrecisionDone] = useState(0)
+  const [precisionPosition, setPrecisionPosition] = useState({
+    top: 45,
+    left: 45,
+  })
+  const [precisionStartedAt, setPrecisionStartedAt] = useState(Date.now())
+  const [precisionAnswers, setPrecisionAnswers] =
+      useState<Record<number, number>>({})
+
+  const [simonLevel, setSimonLevel] = useState(1)
+  const [simonInput, setSimonInput] = useState<string[]>([])
+  const [activeFlash, setActiveFlash] = useState<string | null>(null)
+  const [simonMistakes, setSimonMistakes] = useState(0)
+  const [showingSequence, setShowingSequence] = useState(false)
+
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [questionAnswers, setQuestionAnswers] =
+      useState<Record<number, number>>({})
+
+  const startedAt = useRef(new Date().toISOString())
+  const exerciseStart = useRef(Date.now())
+  const progressLoaded = useRef(false)
 
   useEffect(() => {
     const participantId = getStoredParticipantId()
@@ -58,39 +94,61 @@ export default function BodyKinestheticModule() {
     }
 
     setUserKey(participantId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const [completedResult, setCompletedResult] = useState<StoredModuleResult | null>(null)
-  const [results, setResults] = useState<StoredExerciseResult[]>([])
+  }, [router])
 
-  const [stage, setStage] = useState<Stage>('timing')
+  const stored = useMemo(() => {
+    if (!userKey) return null
 
-  const [timingDone, setTimingDone] = useState(0)
-  const [timingCircleSize, setTimingCircleSize] = useState(190)
-  const [timingMessage, setTimingMessage] = useState(
-      'Tocá el círculo cuando quede dentro de la zona ideal.'
-  )
+    return getStoredModuleResult(MODULE_ID, userKey)
+  }, [userKey])
 
-  const [precisionDone, setPrecisionDone] = useState(0)
-  const [precisionPosition, setPrecisionPosition] = useState({ top: 45, left: 45 })
-  const [precisionStartedAt, setPrecisionStartedAt] = useState(Date.now())
-  const [precisionTimes, setPrecisionTimes] = useState<number[]>([])
+  useEffect(() => {
+    if (!userKey) return
+    if (progressLoaded.current) return
 
-  const [simonLevel, setSimonLevel] = useState(1)
-  const [simonInput, setSimonInput] = useState<string[]>([])
-  const [activeFlash, setActiveFlash] = useState<string | null>(null)
-  const [simonMistakes, setSimonMistakes] = useState(0)
-  const [showingSequence, setShowingSequence] = useState(false)
+    const progress = getStoredModuleProgress(MODULE_ID, userKey)
 
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [questionAnswers, setQuestionAnswers] = useState<number[]>([])
+    if (!progress) {
+      progressLoaded.current = true
+      return
+    }
 
-  const startedAt = useRef(new Date().toISOString())
-  const exerciseStart = useRef(Date.now())
+    if (progress.currentStage) {
+      setStage(progress.currentStage as Stage)
+    }
 
+    if (typeof progress.currentIndex === 'number') {
+      if (progress.currentStage === 'timing') {
+        setTimingDone(progress.currentIndex)
+      }
 
-  const stored = useMemo(() => getStoredModuleResult(MODULE_ID, userKey), [userKey])
+      if (progress.currentStage === 'precision') {
+        setPrecisionDone(progress.currentIndex)
+      }
 
+      if (progress.currentStage === 'simon') {
+        setSimonLevel(progress.currentIndex)
+      }
+    }
+
+    if (typeof progress.currentQuestionIndex === 'number') {
+      setQuestionIndex(progress.currentQuestionIndex)
+    }
+
+    setResults(progress.results ?? [])
+
+    const saved = progress.answers as {
+      questionAnswers?: Record<number, number>
+      precisionAnswers?: Record<number, number>
+      simonMistakes?: number
+    }
+
+    setQuestionAnswers(saved?.questionAnswers ?? {})
+    setPrecisionAnswers(saved?.precisionAnswers ?? {})
+    setSimonMistakes(saved?.simonMistakes ?? 0)
+
+    progressLoaded.current = true
+  }, [userKey])
 
   useEffect(() => {
     if (stage !== 'timing') return
@@ -119,6 +177,50 @@ export default function BodyKinestheticModule() {
     playSimonSequence(simonLevel)
   }, [stage, simonLevel])
 
+  useEffect(() => {
+    if (!userKey) return
+    if (completedResult) return
+    if (!progressLoaded.current) return
+
+    saveStoredModuleProgress(
+        {
+          moduleId: MODULE_ID,
+          moduleName: MODULE_NAME,
+          status: 'in_progress',
+          currentStage: stage,
+          currentIndex:
+              stage === 'timing'
+                  ? timingDone
+                  : stage === 'precision'
+                      ? precisionDone
+                      : stage === 'simon'
+                          ? simonLevel
+                          : undefined,
+          currentQuestionIndex: stage === 'questions' ? questionIndex : undefined,
+          answers: {
+            questionAnswers,
+            precisionAnswers,
+            simonMistakes,
+          },
+          results,
+          updatedAt: new Date().toISOString(),
+        },
+        userKey
+    )
+  }, [
+    userKey,
+    completedResult,
+    stage,
+    timingDone,
+    precisionDone,
+    simonLevel,
+    questionIndex,
+    questionAnswers,
+    precisionAnswers,
+    simonMistakes,
+    results,
+  ])
+
   if (!userKey) {
     return (
         <div className="flex min-h-screen items-center justify-center">
@@ -126,27 +228,36 @@ export default function BodyKinestheticModule() {
         </div>
     )
   }
-  if (completedResult) return <ModuleReview result={completedResult} />
-  if (stored) return <ModuleReview result={stored} />
+
+  if (stored?.status === 'completed' && !completedResult) {
+    router.push('/dashboard')
+    return null
+  }
+
+  function upsertResult(result: StoredExerciseResult) {
+    const next = [
+      ...results.filter((item) => item.id !== result.id),
+      result,
+    ]
+
+    setResults(next)
+
+    return next
+  }
 
   function completeModule(nextResults: StoredExerciseResult[]) {
-    const completed = {
+    const completed: StoredModuleResult = {
       moduleId: MODULE_ID,
       moduleName: MODULE_NAME,
-      status: 'in_review' as const,
+      status: 'completed',
       startedAt: startedAt.current,
       finishedAt: new Date().toISOString(),
       results: nextResults,
     }
 
-    saveStoredModuleResult(completed, userKey)
+    saveStoredModuleResult(completed, userKey!)
+    clearStoredModuleProgress(MODULE_ID, userKey!)
     setCompletedResult(completed)
-  }
-
-  function pushResult(result: StoredExerciseResult) {
-    const next = [...results, result]
-    setResults(next)
-    return next
   }
 
   function resetTiming(message: string) {
@@ -165,7 +276,7 @@ export default function BodyKinestheticModule() {
 
     const diff = Math.abs(timingCircleSize - 81)
 
-    pushResult({
+    upsertResult({
       id: `ic-timing-${timingDone + 1}`,
       title: `Timing motor ${timingDone + 1}`,
       answer: `Cerró dentro del círculo ideal (${Math.round(timingCircleSize)}px)`,
@@ -179,7 +290,7 @@ export default function BodyKinestheticModule() {
       return
     }
 
-    setTimingDone(timingDone + 1)
+    setTimingDone((current) => current + 1)
     setTimingMessage('Bien. Pasá al siguiente intento.')
   }
 
@@ -196,10 +307,13 @@ export default function BodyKinestheticModule() {
 
   function handlePrecisionPress() {
     const reactionTime = Date.now() - precisionStartedAt
-    const nextTimes = [...precisionTimes, reactionTime]
-    setPrecisionTimes(nextTimes)
 
-    pushResult({
+    setPrecisionAnswers((previous) => ({
+      ...previous,
+      [precisionDone]: reactionTime,
+    }))
+
+    upsertResult({
       id: `ic-precision-${precisionDone + 1}`,
       title: `Precisión y reacción ${precisionDone + 1}`,
       answer: `Tocó el objetivo en ${reactionTime}ms`,
@@ -218,7 +332,7 @@ export default function BodyKinestheticModule() {
       return
     }
 
-    setPrecisionDone(precisionDone + 1)
+    setPrecisionDone((current) => current + 1)
   }
 
   function playSimonSequence(level: number) {
@@ -254,7 +368,7 @@ export default function BodyKinestheticModule() {
     if (nextInput.length < simonLevel) return
 
     if (simonLevel >= SIMON_LEVELS) {
-      pushResult({
+      upsertResult({
         id: 'ic-sequence',
         title: 'Secuencia motora tipo Simón dice',
         answer: `Completó ${SIMON_LEVELS} niveles con ${simonMistakes} errores`,
@@ -268,29 +382,55 @@ export default function BodyKinestheticModule() {
       return
     }
 
-    setSimonLevel(simonLevel + 1)
+    setSimonLevel((current) => current + 1)
     setSimonInput([])
   }
 
   function answerQuestion(value: number) {
-    const nextAnswers = [...questionAnswers, value]
-    setQuestionAnswers(nextAnswers)
+    const nextQuestionAnswers = {
+      ...questionAnswers,
+      [questionIndex]: value,
+    }
+
+    setQuestionAnswers(nextQuestionAnswers)
+
+    const orderedAnswers = bodyQuestions.map(
+        (_, index) => nextQuestionAnswers[index]
+    )
+
+    upsertResult({
+      id: `ic-question-${questionIndex + 1}`,
+      title: `Pregunta corporal ${questionIndex + 1}`,
+      answer: String(value),
+      score: Math.round((value / 5) * 100),
+      timeSpent: (Date.now() - exerciseStart.current) / 1000,
+      details: {
+        question: bodyQuestions[questionIndex],
+      },
+      createdAt: new Date().toISOString(),
+    })
 
     if (questionIndex + 1 < bodyQuestions.length) {
-      setQuestionIndex(questionIndex + 1)
+      setQuestionIndex((current) => current + 1)
       return
     }
 
-    const average = nextAnswers.reduce((sum, item) => sum + item, 0) / nextAnswers.length
-    const next = pushResult({
+    const validAnswers = orderedAnswers.filter(
+        (item): item is number => typeof item === 'number'
+    )
+
+    const average =
+        validAnswers.reduce((sum, item) => sum + item, 0) / validAnswers.length
+
+    const next = upsertResult({
       id: 'ic-self-report',
       title: 'Autopercepción corporal-cinestésica',
-      answer: `${nextAnswers.join(', ')}`,
+      answer: validAnswers.join(', '),
       score: Math.round((average / 5) * 100),
       timeSpent: (Date.now() - exerciseStart.current) / 1000,
       details: {
         questions: bodyQuestions,
-        answers: nextAnswers,
+        answers: validAnswers,
       },
       createdAt: new Date().toISOString(),
     })
@@ -298,14 +438,69 @@ export default function BodyKinestheticModule() {
     completeModule(next)
   }
 
+  function goBack() {
+    if (stage === 'questions') {
+      if (questionIndex > 0) {
+        setQuestionIndex((current) => current - 1)
+        return
+      }
+
+      setStage('simon')
+      setSimonLevel(SIMON_LEVELS)
+      return
+    }
+
+    if (stage === 'simon') {
+      setStage('precision')
+      setPrecisionDone(PRECISION_ATTEMPTS - 1)
+      return
+    }
+
+    if (stage === 'precision' && precisionDone > 0) {
+      setPrecisionDone((current) => current - 1)
+      return
+    }
+
+    if (stage === 'timing' && timingDone > 0) {
+      setTimingDone((current) => current - 1)
+    }
+  }
+
   const totalActivities =
-      TIMING_ATTEMPTS + PRECISION_ATTEMPTS + SIMON_LEVELS + bodyQuestions.length
+      TIMING_ATTEMPTS +
+      PRECISION_ATTEMPTS +
+      SIMON_LEVELS +
+      bodyQuestions.length
 
   const completedActivities =
       timingDone +
       precisionDone +
-      (stage === 'simon' ? simonLevel - 1 : stage === 'questions' ? SIMON_LEVELS : 0) +
+      (stage === 'simon'
+          ? simonLevel - 1
+          : stage === 'questions'
+              ? SIMON_LEVELS
+              : 0) +
       (stage === 'questions' ? questionIndex : 0)
+
+  const selectedQuestionAnswer = questionAnswers[questionIndex]
+
+  if (completedResult) {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
+          <div className="max-w-xl rounded-2xl border bg-card p-8 text-center shadow-sm">
+            <h2 className="text-3xl font-bold">Módulo completado</h2>
+
+            <p className="mt-4 text-muted-foreground">
+              Tus respuestas fueron registradas correctamente.
+            </p>
+
+            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
+              Volver al dashboard
+            </Button>
+          </div>
+        </div>
+    )
+  }
 
   return (
       <div className="min-h-screen bg-background px-4 py-5 sm:px-6">
@@ -333,7 +528,10 @@ export default function BodyKinestheticModule() {
               <div
                   className="h-2 rounded-full bg-primary transition-all"
                   style={{
-                    width: `${Math.min(100, (completedActivities / totalActivities) * 100)}%`,
+                    width: `${Math.min(
+                        100,
+                        (completedActivities / totalActivities) * 100
+                    )}%`,
                   }}
               />
             </div>
@@ -362,6 +560,15 @@ export default function BodyKinestheticModule() {
                       }}
                   />
                 </button>
+
+                <Button
+                    variant="outline"
+                    disabled={timingDone === 0}
+                    onClick={goBack}
+                    className="w-full"
+                >
+                  Anterior
+                </Button>
               </section>
           )}
 
@@ -372,7 +579,7 @@ export default function BodyKinestheticModule() {
                 </h2>
 
                 <p className="mt-2 text-muted-foreground">
-                  Tocá el círculo lo más rápido posible. En cada intento se vuelve más chico.
+                  Tocá el círculo lo más rápido posible.
                 </p>
 
                 <div className="relative mt-6 h-[420px] overflow-hidden rounded-2xl border bg-muted">
@@ -385,12 +592,13 @@ export default function BodyKinestheticModule() {
                         top: `${precisionPosition.top}%`,
                         left: `${precisionPosition.left}%`,
                       }}
-                      aria-label="Objetivo de precisión"
                   />
+                </div>
 
-                  <div className="absolute bottom-3 left-4 rounded-lg bg-background/80 px-3 py-2 text-xs text-muted-foreground">
-                    Tamaño actual: {getPrecisionSize()}px
-                  </div>
+                <div className="mt-5">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
                 </div>
               </section>
           )}
@@ -402,8 +610,7 @@ export default function BodyKinestheticModule() {
                 </h2>
 
                 <p className="mt-2 text-muted-foreground">
-                  Nivel {simonLevel}/{SIMON_LEVELS}. Mirá la secuencia y repetila. Si fallás,
-                  se repite el mismo nivel.
+                  Nivel {simonLevel}/{SIMON_LEVELS}
                 </p>
 
                 <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-3">
@@ -452,9 +659,11 @@ export default function BodyKinestheticModule() {
                   <div />
                 </div>
 
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Errores acumulados: {simonMistakes}
-                </p>
+                <div className="mt-5">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
+                </div>
               </section>
           )}
 
@@ -473,7 +682,9 @@ export default function BodyKinestheticModule() {
                       <button
                           key={value}
                           onClick={() => answerQuestion(value)}
-                          className="rounded-xl border p-4 font-bold transition hover:border-primary hover:bg-primary/10"
+                          className={`rounded-xl border p-4 font-bold transition hover:border-primary hover:bg-primary/10 ${
+                              selectedQuestionAnswer === value ? 'border-primary bg-primary/10' : ''
+                          }`}
                       >
                         {value}
                       </button>
@@ -483,6 +694,12 @@ export default function BodyKinestheticModule() {
                 <div className="mt-4 flex justify-between text-xs text-muted-foreground">
                   <span>Nunca</span>
                   <span>Siempre</span>
+                </div>
+
+                <div className="mt-5">
+                  <Button variant="outline" onClick={goBack} className="w-full">
+                    Anterior
+                  </Button>
                 </div>
               </section>
           )}
