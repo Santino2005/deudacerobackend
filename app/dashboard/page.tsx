@@ -24,13 +24,13 @@ const modules = [
 function moduleColor(moduleId: string) {
   const colors: Record<string, string> = {
     'logico-matematica': '#3b82f6',
-    linguistic: '#22c55e',
+    'linguistic': '#22c55e',
     'inteligencia-espacial': '#a855f7',
-    musical: '#ec4899',
+    'musical': '#ec4899',
     'body-kinesthetic': '#f97316',
-    naturalistic: '#10b981',
-    intrapersonal: '#6366f1',
-    interpersonal: '#06b6d4',
+    'naturalistic': '#10b981',
+    'intrapersonal': '#6366f1',
+    'interpersonal': '#06b6d4',
   }
 
   return colors[moduleId] ?? '#64748b'
@@ -46,7 +46,7 @@ function buildProgressGradient(completedIds: string[]) {
 
     const color = completedIds.includes(module.id)
         ? moduleColor(module.id)
-        : 'rgba(148,163,184,0.10)'
+        : 'oklch(from var(--color-muted-foreground) l c h / 0.10)';
 
     return `${color} ${start}deg ${end}deg, transparent ${end}deg ${start + slice}deg`
   })
@@ -61,18 +61,19 @@ function BackgroundProgressWheel({ completedIds }: { completedIds: string[] }) {
 
   return (
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[54%] h-[1050px] w-[1050px] -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute left-1/2 top-[54%] h-262.5 w-262.5 -translate-x-1/2 -translate-y-1/2">
+
+          {/* Pieces */}
           <div
-              className="absolute inset-0 animate-spin rounded-full opacity-35"
+              className="absolute inset-0 animate-spin rounded-full"
               style={{
                 background: gradient,
                 animationDuration: '70s',
               }}
           />
 
-          <div className="absolute inset-[90px] rounded-full bg-background/95" />
-
-          <div className="absolute inset-0 rounded-full ring-1 ring-border/30" />
+          {/* Inner circle */}
+          <div className="absolute inset-22.5 rounded-full bg-background/95" />
         </div>
       </div>
   )
@@ -168,19 +169,21 @@ export default function Dashboard() {
       <div className="relative min-h-screen overflow-hidden bg-background">
         <BackgroundProgressWheel completedIds={completedModuleIds} />
 
-        <header className="relative z-10 border-b border-border bg-card/80 backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">
-                Perfil de Inteligencias
+        <header className="border-b border-border bg-primary backdrop-blur-sm">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground">
+                <span className="font-bold text-primary">MI</span>
+              </div>
+              <h1 className="text-2xl font-bold text-primary-foreground">
+                Timón - Perfil de Inteligencias
               </h1>
             </div>
 
             <Button
-                variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="gap-2"
+                className="gap-2 bg-background text-foreground border-2 border-primary-foreground hover:bg-primary-foreground"
             >
               <LogOut className="h-4 w-4" />
               Salir

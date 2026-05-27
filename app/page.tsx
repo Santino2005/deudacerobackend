@@ -52,15 +52,15 @@ export default function Home() {
   }
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10">
-        <header className="border-b border-border bg-background/80 backdrop-blur-sm">
+      <div className="min-h-screen bg-background from-primary">
+        <header className="border-b border-border bg-primary backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <span className="font-bold text-primary-foreground">MI</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground">
+                <span className="font-bold text-primary">MI</span>
               </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                Perfil de Inteligencias
+              <h1 className="text-2xl font-bold text-primary-foreground">
+                Timón - Perfil de Inteligencias
               </h1>
             </div>
           </div>
