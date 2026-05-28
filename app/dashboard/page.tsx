@@ -11,9 +11,9 @@ import {
 import { getStoredModuleResult } from '@/src/lib/moduleAttemptStorage'
 
 const modules = [
-  { id: 'logico-matematica', title: 'Lógico-Matemática', icon: '🔢', color: 'from-blue-500 to-blue-600', route: '/module/logico-matematica' },
+  { id: 'logico-matematica', title: 'Lógico-Matemática', icon: '🔢', color: 'from-blue-500 to-blue-600', route: '/modules/logical-mathematical' },
   { id: 'linguistic', title: 'Lingüística', icon: '📝', color: 'from-green-500 to-green-600', route: '/modules/linguistic' },
-  { id: 'inteligencia-espacial', title: 'Espacial', icon: '🧩', color: 'from-purple-500 to-purple-600', route: '/module/inteligencia-espacial' },
+  { id: 'inteligencia-espacial', title: 'Espacial', icon: '🧩', color: 'from-purple-500 to-purple-600', route: '/modules/spatial' },
   { id: 'musical', title: 'Musical', icon: '🎵', color: 'from-pink-500 to-pink-600', route: '/modules/musical' },
   { id: 'body-kinesthetic', title: 'Corporal-Cinestésica', icon: '🏃', color: 'from-orange-500 to-orange-600', route: '/modules/body-kinesthetic' },
   { id: 'naturalistic', title: 'Naturalista', icon: '🌿', color: 'from-emerald-500 to-emerald-600', route: '/modules/naturalistic' },

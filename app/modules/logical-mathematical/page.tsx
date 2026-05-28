@@ -1,5 +1,12 @@
-import LogicoMatematicaPage from '@/app/module/logico-matematica/page'
+import {lmPictureExercises} from "@/src/lib/pictureExercises";
+import {PictureChoiceModule} from "@/src/components/modules/PictureChoiceModule";
 
 export default function LogicalMathematicalModule() {
-  return <LogicoMatematicaPage />
+  return (
+      <PictureChoiceModule
+          moduleId="logico-matematica"
+          moduleName="Lógico-Matemática"
+          exercises={lmPictureExercises}
+      />
+  )
 }
