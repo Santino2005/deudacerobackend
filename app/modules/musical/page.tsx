@@ -367,6 +367,8 @@ export default function MusicalModule() {
       score: Math.max(0, 100 - diff * 2),
       timeSpent: (Date.now() - exerciseStart.current) / 1000,
       details: {
+        type: 'objective',
+        objectiveType: 'metronome',
         bpm,
         selected,
         formula: 'BPS = BPM / 60',
@@ -396,6 +398,8 @@ export default function MusicalModule() {
       score: recognitionAnswer === exercise.expected ? 100 : 0,
       timeSpent: (Date.now() - exerciseStart.current) / 1000,
       details: {
+        type: 'objective',
+        objectiveType: 'recognition',
         expected: exercise.expected,
         instruction: exercise.instruction,
       },
@@ -418,7 +422,10 @@ export default function MusicalModule() {
       score: Math.round((value / 5) * 100),
       timeSpent: (Date.now() - exerciseStart.current) / 1000,
       details: {
+        type: 'likert',
         question: musicalQuestions[questionIndex],
+        rawValue: value,
+        maxValue: 5,
       },
       createdAt: new Date().toISOString(),
     }

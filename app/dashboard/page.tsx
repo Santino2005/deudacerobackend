@@ -9,17 +9,22 @@ import {
   clearStoredParticipantId,
 } from '@/src/lib/participantStorage'
 import { getStoredModuleResult } from '@/src/lib/moduleAttemptStorage'
+import { intelligenceModules } from '@/src/lib/intelligenceSummary'
 
-const modules = [
-  { id: 'logico-matematica', title: 'Lógico-Matemática', icon: '🔢', color: 'from-blue-500 to-blue-600', route: '/module/logico-matematica' },
-  { id: 'linguistic', title: 'Lingüística', icon: '📝', color: 'from-green-500 to-green-600', route: '/modules/linguistic' },
-  { id: 'inteligencia-espacial', title: 'Espacial', icon: '🧩', color: 'from-purple-500 to-purple-600', route: '/module/inteligencia-espacial' },
-  { id: 'musical', title: 'Musical', icon: '🎵', color: 'from-pink-500 to-pink-600', route: '/modules/musical' },
-  { id: 'body-kinesthetic', title: 'Corporal-Cinestésica', icon: '🏃', color: 'from-orange-500 to-orange-600', route: '/modules/body-kinesthetic' },
-  { id: 'naturalistic', title: 'Naturalista', icon: '🌿', color: 'from-emerald-500 to-emerald-600', route: '/modules/naturalistic' },
-  { id: 'intrapersonal', title: 'Intrapersonal', icon: '🧠', color: 'from-indigo-500 to-indigo-600', route: '/modules/intrapersonal' },
-  { id: 'interpersonal', title: 'Interpersonal', icon: '👥', color: 'from-cyan-500 to-cyan-600', route: '/modules/interpersonal' },
-]
+const modules = intelligenceModules.map((module) => ({
+  ...module,
+  title: module.title,
+  color: {
+    'logico-matematica': 'from-blue-500 to-blue-600',
+    linguistic: 'from-green-500 to-green-600',
+    'inteligencia-espacial': 'from-purple-500 to-purple-600',
+    musical: 'from-pink-500 to-pink-600',
+    'body-kinesthetic': 'from-orange-500 to-orange-600',
+    naturalistic: 'from-emerald-500 to-emerald-600',
+    intrapersonal: 'from-indigo-500 to-indigo-600',
+    interpersonal: 'from-cyan-500 to-cyan-600',
+  }[module.id] ?? 'from-slate-500 to-slate-600',
+}))
 
 function moduleColor(moduleId: string) {
   const colors: Record<string, string> = {
@@ -101,7 +106,7 @@ export default function Dashboard() {
 
     return modules
         .map((module) => getStoredModuleResult(module.id, participantId))
-        .filter(Boolean)
+        .filter((result) => result?.status === 'completed')
   }, [participantId])
 
   const completedModuleIds = useMemo(() => {
@@ -176,6 +181,17 @@ export default function Dashboard() {
             <p className="text-muted-foreground">
               Completá cada módulo para cerrar el ciclo completo.
             </p>
+
+            {completedModules.length === modules.length ? (
+              <Button className="mt-5" onClick={() => router.push('/results')}>
+                Ver resultado final
+              </Button>
+            ) : (
+              <p className="mt-5 rounded-xl border bg-card/80 p-4 text-sm text-muted-foreground">
+                El botón de resultados aparece cuando completes los {modules.length} módulos.
+                Te faltan {modules.length - completedModules.length}.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

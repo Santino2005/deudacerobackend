@@ -24,11 +24,11 @@ interface Question {
 
 export default function ModuleLayout({ moduleId, moduleTitle, moduleIcon }: ModuleLayoutProps) {
   const router = useRouter()
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [answered, setAnswered] = useState(false)
-  const [selectedAnswer, setSelectedAnswer] = useState(null)
+  const [selectedAnswer, setSelectedAnswer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [completed, setCompleted] = useState(false)
   const supabase = createClient()

@@ -177,49 +177,37 @@ export function PictureChoiceModule({
       100
   )
 
-  function finish(
-      nextResults: StoredExerciseResult[]
-  ) {
-    const totalScore =
-        nextResults.reduce(
-            (acc, result) =>
-                acc + (result.score ?? 0),
+    function finish(nextResults: StoredExerciseResult[]) {
+        const totalScore = nextResults.reduce(
+            (acc, result) => acc + (result.score ?? 0),
             0
         )
 
-    const maxScore =
-        exercises.reduce(
-            (acc, exercise) =>
-                acc +
-                exercise.percentageValue,
+        const maxScore = exercises.reduce(
+            (acc, exercise) => acc + exercise.percentageValue,
             0
         )
 
-    const completed: StoredModuleResult =
-        {
-          moduleId,
-          moduleName,
-          status: 'completed',
-          startedAt,
-          finishedAt:
-              new Date().toISOString(),
-          totalScore,
-          maxScore,
-          results: nextResults,
+        console.log('nextResults', nextResults)
+        console.log('totalScore', totalScore)
+        console.log('maxScore', maxScore)
+        console.log('percentage', Math.round((totalScore / maxScore) * 100))
+
+        const completed: StoredModuleResult = {
+            moduleId,
+            moduleName,
+            status: 'completed',
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            totalScore,
+            maxScore,
+            results: nextResults,
         }
 
-    saveStoredModuleResult(
-        completed,
-        userKey!
-    )
-
-    clearStoredModuleProgress(
-        moduleId,
-        userKey!
-    )
-
-    setCompletedResult(completed)
-  }
+        saveStoredModuleResult(completed, userKey!)
+        clearStoredModuleProgress(moduleId, userKey!)
+        setCompletedResult(completed)
+    }
 
   function continueExercise() {
     if (!selected) return
@@ -242,6 +230,7 @@ export function PictureChoiceModule({
               : 0,
           timeSpent,
           details: {
+              type: 'objective',
             imageUrl:
             exercise.imageUrl,
             correctAnswer:

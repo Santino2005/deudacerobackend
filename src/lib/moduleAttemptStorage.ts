@@ -1,10 +1,17 @@
+export type ExerciseResultType = 'open' | 'likert' | 'objective' | 'scenario' | 'mind'
+
+export type StoredExerciseDetails = {
+  type?: ExerciseResultType
+  [key: string]: unknown
+}
+
 export type StoredExerciseResult = {
   id: string
   title: string
   answer: string
   score?: number
   timeSpent?: number
-  details?: Record<string, unknown>
+  details?: StoredExerciseDetails
   createdAt: string
 }
 
@@ -72,10 +79,9 @@ export function saveStoredModuleResult(
       JSON.stringify(result)
   )
 
-  import('./moduleResultSupabase')
-      .then(({ saveModuleResultToSupabase }) => {
-        saveModuleResultToSupabase(result, participantId).catch(console.error)
-      })
+  import('./moduleResultSupabase').then(({ saveModuleResultToSupabase }) => {
+    saveModuleResultToSupabase(result, participantId).catch(console.error)
+  })
 }
 
 export function getStoredModuleProgress(
@@ -107,7 +113,10 @@ export function saveStoredModuleProgress(
   )
 }
 
-export function clearStoredModuleProgress(moduleId: string, participantId: string) {
+export function clearStoredModuleProgress(
+    moduleId: string,
+    participantId: string
+) {
   if (typeof window === 'undefined') return
 
   localStorage.removeItem(progressStorageKey(moduleId, participantId))

@@ -28,17 +28,6 @@ interface Props {
     exercises: ReflectiveExercise[]
 }
 
-function estimateReflectionScore(answer: string) {
-    const words = answer.trim().split(/\s+/).filter(Boolean).length
-
-    if (words >= 60) return 95
-    if (words >= 40) return 85
-    if (words >= 25) return 70
-    if (words >= 12) return 55
-
-    return 30
-}
-
 export function ReflectiveAssessmentModule({
                                                moduleId,
                                                moduleName,
@@ -116,7 +105,7 @@ export function ReflectiveAssessmentModule({
                 results,
                 updatedAt: new Date().toISOString(),
             },
-            userKey
+            userKey,
         )
     }, [
         userKey,
@@ -176,9 +165,10 @@ export function ReflectiveAssessmentModule({
             id: currentExercise.id,
             title: currentExercise.title,
             answer,
-            score: estimateReflectionScore(answer),
+            score: undefined,
             timeSpent: (Date.now() - exerciseStart.current) / 1000,
             details: {
+                type: 'open',
                 prompt: currentExercise.prompt,
             },
             createdAt: new Date().toISOString(),
@@ -242,7 +232,7 @@ export function ReflectiveAssessmentModule({
                             style={{
                                 width: `${Math.min(
                                     100,
-                                    (completedActivities / totalActivities) * 100
+                                    (completedActivities / totalActivities) * 100,
                                 )}%`,
                             }}
                         />

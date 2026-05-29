@@ -1,7 +1,7 @@
 import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
+import { groq } from '@ai-sdk/groq'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -55,11 +55,11 @@ Evaluate the user on:
 
     // Call Claude via AI SDK
     const response = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: groq('llama-3.3-70b-versatile'),
       system: systemPrompt,
       messages: aiMessages,
       temperature: 0.7,
-      maxTokens: 500,
+      maxOutputTokens: 500,
     })
 
     const aiResponse = response.text
@@ -75,7 +75,7 @@ Evaluate the user on:
 
       // Clean up the response by removing the markers
       return Response.json({
-        message: aiResponse.replace(/\[NEGOTIATION_COMPLETE\].*$/s, '').trim(),
+        message: aiResponse.split('[NEGOTIATION_COMPLETE]')[0].trim(),
         completed,
         score,
       })

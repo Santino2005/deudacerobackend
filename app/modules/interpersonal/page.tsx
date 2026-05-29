@@ -262,15 +262,6 @@ export default function InterpersonalModule() {
           ? answeredScenarioIds.length
           : REQUIRED_SCENARIOS + mindIndex
 
-  function scoreOpenAnswer(value: string) {
-    const words = value
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean).length
-
-    return Math.min(100, Math.max(35, words * 4))
-  }
-
   function upsertResult(result: StoredExerciseResult) {
     const next = [
       ...results.filter(
@@ -321,7 +312,7 @@ export default function InterpersonalModule() {
       id: item.id,
       title: item.title,
       answer: value,
-      score: scoreOpenAnswer(value),
+      score: undefined,
       timeSpent:
           (Date.now() - exerciseStart.current) / 1000,
       details: {
