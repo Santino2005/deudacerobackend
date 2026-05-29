@@ -1,7 +1,5 @@
 import { generateText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
-import { groq } from '@ai-sdk/groq'
 
 interface Message {
   role: 'user' | 'assistant'
