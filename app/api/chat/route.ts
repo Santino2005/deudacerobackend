@@ -53,7 +53,7 @@ Evaluate the user on:
 
     // Call Claude via AI SDK
     const response = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
+      model: "",
       system: systemPrompt,
       messages: aiMessages,
       temperature: 0.7,
