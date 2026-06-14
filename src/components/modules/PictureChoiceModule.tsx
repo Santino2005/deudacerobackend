@@ -19,8 +19,11 @@ export type PictureChoiceExercise = {
   id: string
   title: string
   imageUrl: string
+  instructionImageUrl?: string
+  mainImageUrl?: string
   question: string
   optionCount: number
+  optionImageUrls?: string[]
   correctAnswer: string
   options?: string[]
   percentageValue: number
@@ -342,30 +345,58 @@ export function PictureChoiceModule({
         </header>
 
         <main className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:px-6 sm:py-8">
-          <section className="rounded-2xl border bg-card p-3 shadow-sm sm:p-6">
-            <div className="relative min-h-[320px] w-full overflow-hidden rounded-xl bg-white sm:min-h-[520px]">
-              <Image
-                  src={exercise.imageUrl}
-                  alt={exercise.title}
-                  fill
-                  className="object-contain"
-                  priority
-              />
-            </div>
-          </section>
-
           <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
             <h2 className="text-lg font-bold">
               {exercise.question}
             </h2>
 
-            <p className="mt-1 text-sm text-muted-foreground">
+            {exercise.instructionImageUrl && (
+                <div className="relative mt-4 min-h-[180px] w-full overflow-hidden rounded-xl bg-white sm:min-h-[280px]">
+                  <Image
+                      src={exercise.instructionImageUrl}
+                      alt={`Consigna de ${exercise.title}`}
+                      fill
+                      className="object-contain"
+                      priority
+                  />
+                </div>
+            )}
+
+            {exercise.mainImageUrl && (
+                <div className="relative mt-4 min-h-[240px] w-full overflow-hidden rounded-xl bg-white sm:min-h-[420px]">
+                  <Image
+                      src={exercise.mainImageUrl}
+                      alt={exercise.title}
+                      fill
+                      className="object-contain"
+                      priority
+                  />
+                </div>
+            )}
+          </section>
+
+          {!exercise.instructionImageUrl && !exercise.mainImageUrl && (
+              <section className="rounded-2xl border bg-card p-3 shadow-sm sm:p-6">
+                <div className="relative min-h-[320px] w-full overflow-hidden rounded-xl bg-white sm:min-h-[520px]">
+                  <Image
+                      src={exercise.imageUrl}
+                      alt={exercise.title}
+                      fill
+                      className="object-contain"
+                      priority
+                  />
+                </div>
+              </section>
+          )}
+
+          <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
+            <p className="text-sm text-muted-foreground">
               Elegí una opción. No
               se muestra si es
               correcta o incorrecta.
             </p>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {(
                   exercise.options ??
                   Array.from(
@@ -378,27 +409,44 @@ export function PictureChoiceModule({
                               itemIndex + 1
                           )
                   )
-              ).map((option) => (
-                  <button
-                      key={option}
-                      onClick={() =>
-                          setAnswers(
-                              (previous) => ({
-                                ...previous,
-                                [exercise.id]:
-                                option,
-                              })
-                          )
-                      }
-                      className={`rounded-xl border-2 p-5 text-xl font-bold transition ${
-                          selected === option
-                              ? 'border-primary bg-primary/10 shadow'
-                              : 'border-border hover:border-primary/60'
-                      }`}
-                  >
-                    {option}
-                  </button>
-              ))}
+              ).map((option, optionIndex) => {
+                const optionImageUrl =
+                    exercise.optionImageUrls?.[optionIndex]
+
+                return (
+                    <button
+                        key={option}
+                        onClick={() =>
+                            setAnswers(
+                                (previous) => ({
+                                  ...previous,
+                                  [exercise.id]:
+                                  option,
+                                })
+                            )
+                        }
+                        className={`rounded-xl border-2 p-3 text-xl font-bold transition ${
+                            selected === option
+                                ? 'border-primary bg-primary/10 shadow'
+                                : 'border-border hover:border-primary/60'
+                        }`}
+                        aria-label={`Opción ${option}`}
+                    >
+                      {optionImageUrl ? (
+                          <span className="relative block min-h-[120px] w-full overflow-hidden rounded-lg bg-white sm:min-h-[150px]">
+                            <Image
+                                src={optionImageUrl}
+                                alt={`Opción ${option}`}
+                                fill
+                                className="object-contain"
+                            />
+                          </span>
+                      ) : (
+                          option
+                      )}
+                    </button>
+                )
+              })}
             </div>
 
             <div className="mt-5 space-y-3">
