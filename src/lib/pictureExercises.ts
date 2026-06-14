@@ -142,55 +142,64 @@ function getIeOptionImageUrls(name: string, count: number) {
     )
 }
 
+const getQuestionByExerciseName = (name: string): string => {
+    switch (name) {
+        case 'a':
+            return 'Seleccioná la figura que cumple las mismas condiciones de ubicación de los puntos que la figura X.';
+        case 'b':
+            return 'Encontrá cómo aparecería el patrón cuando la hoja transparente se doble sobre la línea punteada.';
+        case 'c':
+            return 'Elegí las figura tridimensionales que pueden formarse a partir de la figura desplegada.';
+        case 'd':
+            return 'Seleccioná los cubos que pueden formarse a partir de la figura desplegada.';
+        case 'e':
+            return 'Indicá cuál de los cuadrados puede formarse con las piezas dadas en la figura X.';
+        case 'f':
+            return 'Encontrá cuál de las figuras puede construirse utilizando todas las piezas mostradas.';
+        case 'g':
+            return 'Indicá cuál de los cuadrados puede formarse con las piezas dadas en la figura X.';
+        case 'h':
+            return 'Seleccioná las tres figuras que pueden combinarse para formar un triángulo equilátero.';
+        case 'i':
+            return 'Seleccioná las tres figuras que pueden combinarse para formar un triángulo equilátero.';
+        case 'j':
+            return 'Seleccioná las tres figuras que pueden combinarse para formar un triángulo equilátero.';
+        case 'k':
+            return 'Indicá cuál de las figuras puede formarse con las piezas dadas en la figura X.';
+        case 'l':
+            return 'Encontrá cuál de las figuras puede formarse con las piezas dadas.';
+        case 'm':
+            return 'Elegí la figura correcta formada a partir de las piezas.';
+        case 'n':
+            return 'Seleccioná el círculo que se puede formar con las piezas de la figura X';
+        case 'o':
+            return 'Elegí el patrón final que puede obtenerse al plegar la pieza de cartón.';
+        case 'p':
+            return 'Elegí la figura tridimensional que puede formarse a partir de la red desplegada.';
+        case 'q':
+            return 'Seleccioná las tres figuras que pueden combinarse para formar un cuadrado completo.';
+        case 'r':
+            return 'Seleccioná las tres figuras que encajan correctamente para formar un cuadrado.';
+        default:
+            return 'Índice de pregunta inválido: notificar a los desarrolladores';
+    }
+};
+
 export const iePictureExercises: PictureChoiceExercise[] =
-    IE_EXERCISES.map((exercise, index) => ({
-        id: `ie-${exercise.name}`,
-        title: `Ejercicio ${index + 1}`,
-        imageUrl: `/IE/img/${exercise.name}.png`,
-        instructionImageUrl: getIeInstructionImageUrl(exercise.name),
-        mainImageUrl: getIeMainImageUrl(exercise.name),
-        question:
-            exercise.name === 'a'
-                ? 'Seleccioná la figura que cumple las mismas condiciones de ubicación de los puntos que la figura X.'
-                : exercise.name === 'b'
-                    ? 'Encontrá cómo aparecería el patrón cuando la hoja transparente se doble sobre la línea punteada.'
-                    : exercise.name === 'c'
-                        ? 'Elegí la figura tridimensional que puede formarse a partir de la red desplegada.'
-                        : exercise.name === 'd'
-                            ? 'Seleccioná el cubo correcto que puede formarse a partir de la figura desplegada.'
-                            : exercise.name === 'e'
-                                ? 'Indicá cuál de las figuras puede formarse con las piezas dadas en la figura X.'
-                                : exercise.name === 'f'
-                                    ? 'Encontrá cuál de las figuras puede construirse utilizando todas las piezas mostradas.'
-                                    : exercise.name === 'g'
-                                        ? 'Seleccioná las tres figuras que encajan entre sí para formar un cuadrado completo.'
-                                        : exercise.name === 'h'
-                                            ? 'Seleccioná las tres figuras que pueden combinarse para formar un triángulo equilátero.'
-                                            : exercise.name === 'j'
-                                                ? 'Elegí la figura circular que puede construirse con las piezas dadas.'
-                                                : exercise.name === 'k'
-                                                    ? 'Seleccioná la figura que puede construirse con las piezas triangulares dadas.'
-                                                    : exercise.name === 'l'
-                                                        ? 'Encontrá cuál de las figuras puede formarse con las piezas dadas.'
-                                                        : exercise.name === 'm'
-                                                            ? 'Elegí la figura circular correcta formada a partir de las piezas.'
-                                                            : exercise.name === 'n'
-                                                                ? 'Seleccioná el cubo similar al formado por la hoja desplegada.'
-                                                                : exercise.name === 'o'
-                                                                    ? 'Elegí el patrón final que puede obtenerse al plegar la pieza de cartón.'
-                                                                    : exercise.name === 'p'
-                                                                        ? 'Seleccioná las tres figuras que encajan para formar un cuadrado completo.'
-                                                                        : exercise.name === 'q'
-                                                                            ? 'Seleccioná las tres figuras que pueden combinarse para formar un cuadrado completo.'
-                                                                            : exercise.name === 'r'
-                                                                                ? 'Seleccioná las tres figuras que encajan correctamente para formar un cuadrado.'
-                                                                                : '¿Cuál es la figura correcta?',
-        optionCount: exercise.optionCount ?? exercise.options!.length,
-        options: exercise.options,
-        optionImageUrls: getIeOptionImageUrls(
-            exercise.name,
-            exercise.optionCount ?? exercise.options!.length
-        ),
-        correctAnswer: exercise.correctAnswer,
-        percentageValue: 100 / IE_EXERCISES.length,
-    }))
+    IE_EXERCISES.map((exercise, index) => {
+        const optionCount = exercise.optionCount ?? exercise.options!.length;
+
+        return {
+            id: `ie-${exercise.name}`,
+            title: `Ejercicio ${index + 1}`,
+            imageUrl: `/IE/img/${exercise.name}.png`,
+            instructionImageUrl: getIeInstructionImageUrl(exercise.name),
+            mainImageUrl: getIeMainImageUrl(exercise.name),
+            question: getQuestionByExerciseName(exercise.name),
+            optionCount,
+            options: exercise.options,
+            optionImageUrls: getIeOptionImageUrls(exercise.name, optionCount),
+            correctAnswer: exercise.correctAnswer,
+            percentageValue: 100 / IE_EXERCISES.length,
+        };
+    });
