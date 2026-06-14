@@ -75,24 +75,24 @@ export const lmPictureExercises: PictureChoiceExercise[] =
 const IE_EXERCISES = [
   { name: 'a', correctAnswer: '2', optionCount: 4 },
   { name: 'b', correctAnswer: '3', optionCount: 4 },
-  { name: 'c', correctAnswer: '2', optionCount: 4 },
-  { name: 'd', correctAnswer: '4', optionCount: 4 },
-  { name: 'e', correctAnswer: '1', optionCount: 4 },
-  { name: 'f', correctAnswer: '2', optionCount: 4 },
+  { name: 'c', correctAnswer: '23', options: ['41', '32', '21', '23'] },
+  { name: 'd', correctAnswer: '13', options: ['13', '32', '21', '14'] },
+  { name: 'e', correctAnswer: '3', optionCount: 4 },
+  { name: 'f', correctAnswer: '3', optionCount: 4 },
   { name: 'g', correctAnswer: '3', optionCount: 4 },
 
-  { name: 'h', correctAnswer: '134', options: ['124', '235', '134', '245'] },
+  { name: 'h', correctAnswer: '125', options: ['125', '235', '134', '245'] },
   { name: 'i', correctAnswer: '345', options: ['123', '345', '245', '234'] },
-  { name: 'j', correctAnswer: '134', options: ['134', '235', '245', '123'] },
+  { name: 'j', correctAnswer: '245', options: ['134', '235', '123', '245'] },
 
-  { name: 'k', correctAnswer: '2', optionCount: 4 },
-  { name: 'l', correctAnswer: '1', optionCount: 4 },
+  { name: 'k', correctAnswer: '3', optionCount: 4 },
+  { name: 'l', correctAnswer: '2', optionCount: 4 },
   { name: 'm', correctAnswer: '3', optionCount: 4 },
-  { name: 'n', correctAnswer: '2', optionCount: 4 },
+  { name: 'n', correctAnswer: '1', optionCount: 4 },
   { name: 'o', correctAnswer: '3', optionCount: 4 },
-  { name: 'p', correctAnswer: '4', optionCount: 4 },
+  { name: 'p', correctAnswer: '1', optionCount: 4 },
 
-  { name: 'q', correctAnswer: '124', options: ['124', '235', '134', '245'] },
+  { name: 'q', correctAnswer: '235', options: ['124', '235', '134', '245'] },
   { name: 'r', correctAnswer: '234', options: ['123', '345', '245', '234'] },
 ]
 
@@ -105,12 +105,13 @@ function getIeOriginalFileName(name: string) {
 }
 
 function getIeInstructionImageUrl(name: string) {
-    if (['h', 'i', 'j', 'q', 'r'].includes(name)) return undefined
+    if (['c', 'd', 'h', 'i', 'j', 'q', 'r'].includes(name)) return undefined
     return `/IE/${getIeFolderName(name)}/consigna.png`
 }
 
 function getIeMainImageUrl(name: string) {
-    return `/IE/${getIeFolderName(name)}/${getIeOriginalFileName(name)}`
+    if (['c', 'd', 'h', 'i', 'j', 'q', 'r'].includes(name)) return `/IE/${getIeFolderName(name)}/${getIeOriginalFileName(name)}`
+    return undefined
 }
 
 function getIePastedImageName(index: number) {
@@ -119,7 +120,7 @@ function getIePastedImageName(index: number) {
 }
 
 function getIeOptionImageUrls(name: string, count: number) {
-    if (['h', 'i', 'j', 'q', 'r'].includes(name)) return undefined
+    if (['c', 'd', 'h', 'i', 'j', 'q', 'r'].includes(name)) return undefined
 
     const pastedImageExercises =
         ['a', 'e', 'f', 'g', 'k', 'l', 'm', 'n']
